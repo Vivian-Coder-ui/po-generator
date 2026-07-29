@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="信可美採購單 PDF 轉單系統", layout="centered")
 
+# 介面上方的標題（列印時會自動隱藏）
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
 st.write("請上傳美加採購單檔案，選擇供應商與交易條件，系統將自動產生正式採購單畫面供您另存 PDF。")
 
@@ -32,7 +33,7 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader("📋 採購單正式預覽")
 
-    # 使用獨立的 HTML 元件渲染，保證排版完美、絕不印出程式碼
+    # 包含完整 DIN 2093 公差規範的乾淨 HTML/CSS 範本
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -47,7 +48,7 @@ if uploaded_file is not None:
             padding: 10px;
         }}
         .container {{
-            max-width: 700px;
+            max-width: 750px;
             margin: auto;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
@@ -58,12 +59,12 @@ if uploaded_file is not None:
         .subtitle {{ color: #666; margin-top: 5px; font-size: 11pt; }}
         hr {{ border: 1px solid #1a365d; }}
         .grid {{ width: 100%; margin-top: 15px; border-collapse: collapse; }}
-        .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 10pt; }}
+        .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 10pt; line-height: 1.5; }}
         table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
         table.items th, table.items td {{ border: 1px solid #cbd5e1; padding: 10px; font-size: 10pt; }}
         table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
         .text-right {{ text-align: right; }}
-        .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.4; color: #444; }}
+        .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
     </style>
     </head>
     <body>
@@ -108,10 +109,20 @@ if uploaded_file is not None:
                 <tbody>
                     <tr>
                         <td>1</td>
-                        <td>盤形彈簧 DB502530<br><span style="font-size: 9pt; color: #555;">規格: 50x25.4x3.0xH4.1 / 材質: 51CrV4 (DIN 2093 公差)</span></td>
-                        <td class="text-right">{qty:,}</td>
-                        <td class="text-right">{converted_unit_price:.2f}</td>
-                        <td class="text-right">{total_amount:,.2f}</td>
+                        <td>
+                            <strong>盤形彈簧 DB502530</strong><br>
+                            <span style="font-size: 9pt; color: #555;">
+                                規格尺寸: 50x25.4x3.0xH4.1 / 材質: 51CrV4<br>
+                                <strong>DIN 2093 公差規範：</strong><br>
+                                - 外徑 OD: 0 ~ -0.25 mm<br>
+                                - 內徑 ID: 0 ~ +0.21 mm<br>
+                                - 厚度 t : +0.04 ~ -0.12 mm<br>
+                                - 高度 Lo: +0.20 ~ -0.10 mm
+                            </span>
+                        </td>
+                        <td class="text-right" style="vertical-align: top;">{qty:,}</td>
+                        <td class="text-right" style="vertical-align: top;">{converted_unit_price:.2f}</td>
+                        <td class="text-right" style="vertical-align: top;">{total_amount:,.2f}</td>
                     </tr>
                 </tbody>
             </table>
@@ -132,8 +143,8 @@ if uploaded_file is not None:
     </html>
     """
 
-    # 使用元件完美渲染，並設定足夠的高度讓捲軸不用卡在框框裡
-    components.html(html_code, height=650, scrolling=True)
+    # 顯示採購單預覽畫面（高度設為 720px 完整容納公差內容）
+    components.html(html_code, height=720, scrolling=True)
 
     st.markdown("---")
-    st.info("📥 **如何存成 PDF 給供應商？**\n1. 直接按下鍵盤 **`Ctrl + P`** (Mac 請按 `Cmd + P`)。\n2. 在右側列印選單中，將「目的地」改成 **「另存為 PDF (Save as PDF)」**。\n3. 點擊 **儲存**，就能得到完美的正式 PDF 檔，直接寄給供應商囉！")
+    st.info("📥 **如何完美列印/存成 PDF？**\n1. 直接點擊下方專屬按鈕或按鍵盤 **`Ctrl + P`**。\n2. 系統已設定好列印防護：**列印時只會印出下方的正式採購單**，上方的上傳按鈕與選單會自動隱藏！\n3. 將目的地改為 **「另存為 PDF」** 即可完美寄給供應商！")
