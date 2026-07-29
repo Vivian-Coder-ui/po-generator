@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將完整帶入三行品名規格資訊，並自動計算單價 ÷ 6。")
+st.write("請上傳美加採購單檔案，系統將直接呈現三行品名規格資訊，並自動計算單價 ÷ 6。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -25,7 +25,7 @@ if uploaded_file is not None:
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 完整對應截圖中的三行資訊
+    # 直接呈現三行資訊，不加額外文字說明
     line1 = "SBS750-038"
     line2 = "Simars 氮氣彈簧 SBS750-038"
     line3 = "SBS750-038-171"
@@ -37,11 +37,10 @@ if uploaded_file is not None:
     converted_unit_price = raw_unit_price / 6
     total_amount = qty * converted_unit_price
 
-    # 將三行完整帶入
     item_display = f"""
         <strong>{line1}</strong><br>
         <span>{line2}</span><br>
-        <span style="font-size: 9pt; color: #555;">專案代號/備註: {line3}</span>
+        <span>{line3}</span>
     """
 
     st.markdown("---")
