@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將自動判斷是否為碟型彈簧與規格，自動套用對應格式與單價 ÷ 6。")
+st.write("請上傳美加採購單檔案，系統將自動判斷品項與規格，並自動更新收貨地址與單價 ÷ 6。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -25,9 +25,8 @@ if uploaded_file is not None:
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 模擬從美加採購單解析出來的資料（以剛才的氮氣彈簧為例示範非碟型彈簧）
-    # 您後續若上傳碟型彈簧，只需調整 is_disk_spring = True 即可
-    is_disk_spring = False  # 判定是否為碟型彈簧且有規格
+    # 模擬從美加採購單解析出來的資料（以氮氣彈簧為例）
+    is_disk_spring = False  # 若為碟型彈簧且有規格請設為 True
     item_code = "SBS750-038"
     item_desc = "Simars 氮氣彈簧 SBS750-038"
     raw_unit_price = 1128.30
@@ -37,7 +36,6 @@ if uploaded_file is not None:
     converted_unit_price = raw_unit_price / 6
     total_amount = qty * converted_unit_price
 
-    # 根據條件產生對應的品名規格顯示內容
     if is_disk_spring:
         item_display = """
             <strong>盤形彈簧 DB502530</strong><br>
@@ -51,7 +49,6 @@ if uploaded_file is not None:
             </span>
         """
     else:
-        # 不是碟型彈簧或無規格時，直接寫跟原本一樣的品號與品名
         item_display = f"""
             <strong>{item_desc}</strong><br>
             <span style="font-size: 9pt; color: #555;">
@@ -145,7 +142,7 @@ if uploaded_file is not None:
             <div class="box" style="margin-top: 12px;">
                 <strong>【收貨與寄送資訊】</strong><br>
                 收貨公司：信可美股份有限公司<br>
-                收貨地址：新北市新莊區民安路207巷30弄8號1樓 (電話: 02-8201-4393)
+                收貨地址：338桃園市蘆竹區安中街20巷13號4樓 (電話: 02-8201-4393)
             </div>
 
             <table class="items">
