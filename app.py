@@ -5,7 +5,7 @@ from datetime import datetime
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳客戶採購單檔案，系統將自動解析並產生發給指定供應商的正式 PDF 採購單。")
+st.write("請上傳客戶採購單檔案，選擇供應商與交易條件，系統將自動轉換並產生正式 PDF 採購單。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -16,7 +16,12 @@ SUPPLIERS = {
 # 1. 上傳客戶採購單
 uploaded_file = st.file_uploader("📤 請上傳客戶採購單檔案 (.txt / .csv)", type=["txt", "csv"])
 
-target_supplier = st.selectbox("🎯 選擇發給哪家供應商", ["SF", "VS", "XB"])
+# 2. 選擇供應商與交易條件
+col1, col2 = st.columns(2)
+with col1:
+    target_supplier = st.selectbox("🎯 選擇發給哪家供應商", ["SF", "VS", "XB"])
+with col2:
+    incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
 if uploaded_file is not None:
     # 讀取上傳的檔案內容
@@ -36,6 +41,7 @@ if uploaded_file is not None:
 PO Number: {po_no}
 Date: {datetime.now().strftime("%Y/%m/%d")}
 Currency: RMB
+Incoterms: {incoterms}
 
 [SUPPLIER INFO]
 Supplier: {sup_info['name']} ({target_supplier})
@@ -60,7 +66,7 @@ Phone: 02-8201-4393
 3. Please process official export customs declaration.
 =================================================="""
 
-        # 建立乾淨的純文字 PDF 檔案（確保 100% 雲端相容且不報錯）
+        # 建立純文字 PDF 檔案
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", mode="w", encoding="utf-8") as tmp:
             tmp.write(pdf_content)
             tmp_path = tmp.name
