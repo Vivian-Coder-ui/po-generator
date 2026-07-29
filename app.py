@@ -2,10 +2,10 @@ import streamlit as st
 import tempfile
 from datetime import datetime
 
-st.set_page_title("信可美採購單自動生成器", layout="centered")
+st.set_page_config(page_title="信可美採購單自動生成器", layout="centered")
 
 st.title("📄 信可美採購單自動生成器")
-st.write("請輸入美加採購單或品項資訊，系統將自動套用供應商與 DIN 2093 公差規則產生採購單。")
+st.write("請輸入採購資訊，系統將自動套用供應商與 DIN 2093 公差規則產生採購單檔案。")
 
 SUPPLIERS = {
     "VS": {"name": "常州西科德彈簧有限公司", "addr": "中國常州新北區寶塔山路108號"},
