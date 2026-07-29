@@ -3,9 +3,8 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="信可美採購單 PDF 轉單系統", layout="centered")
 
-# 介面上方的標題（列印時會自動隱藏）
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，選擇供應商與交易條件，系統將自動產生正式採購單畫面供您另存 PDF。")
+st.write("請上傳美加採購單檔案，選擇供應商與交易條件，系統將自動產生正式採購單。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -31,9 +30,9 @@ if uploaded_file is not None:
     total_amount = qty * converted_unit_price
 
     st.markdown("---")
-    st.subheader("📋 採購單正式預覽")
+    st.subheader("📋 採購單正式預覽與一鍵列印/存檔")
 
-    # 包含完整 DIN 2093 公差規範的乾淨 HTML/CSS 範本
+    # 包含專屬列印按鈕與完整公差規範的乾淨 HTML 範本
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -41,20 +40,36 @@ if uploaded_file is not None:
     <meta charset="utf-8">
     <style>
         body {{
-            background: white;
+            background: #f8fafc;
             color: #333;
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
         }}
         .container {{
             max-width: 750px;
             margin: auto;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-            padding: 25px;
+            padding: 30px;
             background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }}
+        .print-btn {{
+            background-color: #1a365d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14pt;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto 25px auto;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }}
+        .print-btn:hover {{ background-color: #2a4365; }}
         h2 {{ color: #1a365d; margin-bottom: 0px; }}
         .subtitle {{ color: #666; margin-top: 5px; font-size: 11pt; }}
         hr {{ border: 1px solid #1a365d; }}
@@ -65,10 +80,20 @@ if uploaded_file is not None:
         table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
         .text-right {{ text-align: right; }}
         .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
+
+        /* 專屬列印設定：列印時只印出 container 內容，隱藏按鈕本身 */
+        @media print {{
+            body {{ background: white; padding: 0; }}
+            .container {{ border: none; box-shadow: none; padding: 0; max-width: 100%; }}
+            .print-btn {{ display: none; }}
+        }}
     </style>
     </head>
     <body>
         <div class="container">
+            <!-- 專屬列印按鈕 -->
+            <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為 PDF 檔</button>
+
             <h2>信可美股份有限公司</h2>
             <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
             <hr>
@@ -143,8 +168,5 @@ if uploaded_file is not None:
     </html>
     """
 
-    # 顯示採購單預覽畫面（高度設為 720px 完整容納公差內容）
-    components.html(html_code, height=720, scrolling=True)
-
-    st.markdown("---")
-    st.info("📥 **如何完美列印/存成 PDF？**\n1. 直接點擊下方專屬按鈕或按鍵盤 **`Ctrl + P`**。\n2. 系統已設定好列印防護：**列印時只會印出下方的正式採購單**，上方的上傳按鈕與選單會自動隱藏！\n3. 將目的地改為 **「另存為 PDF」** 即可完美寄給供應商！")
+    # 將元件高度擴大，讓內建按鈕直接完美呈現
+    components.html(html_code, height=820, scrolling=True)
