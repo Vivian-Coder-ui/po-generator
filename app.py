@@ -1,7 +1,6 @@
 import streamlit as st
 import tempfile
 from datetime import datetime
-from weasyprint import HTML
 
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
@@ -31,7 +30,7 @@ if uploaded_file is not None:
     else:
         st.info("📄 已成功上傳客戶 PDF 採購單檔案")
 
-    # 預設自動代入範例數值與轉換（後續可由上傳檔案文字解析擴充）
+    # 模擬自動解析與換算
     raw_unit_price = 10.86
     qty = 10000
     converted_unit_price = raw_unit_price / 6
@@ -46,168 +45,46 @@ if uploaded_file is not None:
         sup_info = SUPPLIERS[target_supplier]
         current_date_str = datetime.now().strftime("%Y/%m/%d")
 
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta charset="utf-8">
-        <style>
-            @page {{
-                size: A4;
-                margin: 15mm;
-                background-color: #ffffff;
-            }}
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                color: #333333;
-                margin: 0;
-                padding: 0;
-                font-size: 11pt;
-                line-height: 1.4;
-            }}
-            *, *::before, *::after {{ box-sizing: border-box; }}
-            .header {{
-                border-bottom: 2px solid #1a365d;
-                padding-bottom: 12px;
-                margin-bottom: 20px;
-            }}
-            .title {{
-                font-size: 20pt;
-                font-weight: bold;
-                color: #1a365d;
-                margin: 0;
-            }}
-            .subtitle {{
-                font-size: 11pt;
-                color: #666666;
-                margin-top: 4px;
-            }}
-            .grid {{
-                width: 100%;
-                margin-bottom: 15px;
-            }}
-            .col {{
-                width: 50%;
-                vertical-align: top;
-            }}
-            .box {{
-                background-color: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 4px;
-                padding: 12px;
-                margin-bottom: 15px;
-            }}
-            .box h3 {{
-                margin-top: 0;
-                font-size: 11pt;
-                color: #1a365d;
-                border-bottom: 1px solid #cbd5e1;
-                padding-bottom: 5px;
-            }}
-            table.items {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 15px;
-                margin-bottom: 20px;
-            }}
-            table.items th, table.items td {{
-                border: 1px solid #cbd5e1;
-                padding: 10px;
-                text-align: left;
-            }}
-            table.items th {{
-                background-color: #1a365d;
-                color: #ffffff;
-                font-weight: bold;
-            }}
-            .text-right {{ text-align: right; }}
-            .terms {{
-                font-size: 9pt;
-                color: #555555;
-                background-color: #f1f5f9;
-                padding: 12px;
-                border-radius: 4px;
-            }}
-        </style>
-        </head>
-        <body>
-            <div class="header">
-                <div class="title">信可美股份有限公司</div>
-                <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
-            </div>
+        # 使用純文字轉 PDF 格式，不需要安裝額外套件
+        pdf_content = f"""SINKOME CO., LTD. PURCHASE ORDER (正式採購單)
+==================================================
+PO Number: {po_no}
+Date: {current_date_str}
+Currency: RMB
+Incoterms: {incoterms}
 
-            <table class="grid" style="border:none;">
-                <tr>
-                    <td class="col" style="border:none; padding-right:10px;">
-                        <div class="box">
-                            <h3>供應商資訊 (SUPPLIER)</h3>
-                            <strong>{sup_info['name']} ({target_supplier})</strong><br>
-                            {sup_info['addr']}
-                        </div>
-                    </td>
-                    <td class="col" style="border:none; padding-left:10px;">
-                        <div class="box">
-                            <h3>採購資訊</h3>
-                            <strong>採購單號：</strong> {po_no}<br>
-                            <strong>採購日期：</strong> {current_date_str}<br>
-                            <strong>交易條件：</strong> {incoterms}<br>
-                            <strong>幣別：</strong> RMB
-                        </div>
-                    </td>
-                </tr>
-            </table>
+[SUPPLIER INFO]
+Supplier: {sup_info['name']} ({target_supplier})
+Address: {sup_info['addr']}
 
-            <div class="box">
-                <h3>收貨與寄送資訊 (SHIP TO)</h3>
-                <strong>公司名稱：</strong> 信可美股份有限公司<br>
-                <strong>收貨地址：</strong> 新北市新莊區民安路207巷30弄8號1樓<br>
-                <strong>聯絡電話：</strong> 02-8201-4393
-            </div>
+[SHIP TO]
+Company: SINKOME CO., LTD.
+Address: 1F, No. 8, Alley 30, Lane 207, Minan Rd., Xinzhuang Dist., New Taipei City
+Phone: 02-8201-4393
 
-            <table class="items">
-                <thead>
-                    <tr>
-                        <th>項次</th>
-                        <th>品名規格</th>
-                        <th>數量 (PCS)</th>
-                        <th>單價 (RMB)</th>
-                        <th>金額 (RMB)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>{item_name}<br><small>公差規範：依據 DIN 2093 標準規範</small></td>
-                        <td>{qty:,}</td>
-                        <td class="text-right">{converted_unit_price:.2f}</td>
-                        <td class="text-right">{total_amount:,.2f}</td>
-                    </tr>
-                </tbody>
-            </table>
+--------------------------------------------------
+[ITEMS / DETAILS]
+Item: {item_name}
+Quantity: {qty:,} PCS
+Unit Price (Client Price / 6): RMB {converted_unit_price:.2f}
+Total Amount: RMB {total_amount:,.2f}
+--------------------------------------------------
 
-            <div style="text-align: right; font-size: 13pt; font-weight: bold; margin-bottom: 20px;">
-                未稅總金額 (Total RMB)：RMB {total_amount:,.2f}
-            </div>
+[TOLERANCE STANDARD]
+- DIN 2093 Standard Tolerance Applied.
 
-            <div class="terms">
-                <strong>採購注意事項與條款：</strong><br>
-                1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
-                2. 公差必須於標準公差範圍內（DIN 2093）。<br>
-                3. 順豐帳號：8860743308<br>
-                4. 請做正式出口報關。
-            </div>
-        </body>
-        </html>
-        """
+[TERMS & CONDITIONS]
+1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。
+2. 公差必須於標準公差範圍內（DIN 2093）。
+3. 順豐帳號：8860743308
+4. 請做正式出口報關。
+=================================================="""
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".html", mode="w", encoding="utf-8") as f_html:
-            f_html.write(html_content)
-            html_path = f_html.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", mode="w", encoding="utf-8") as tmp:
+            tmp.write(pdf_content)
+            tmp_path = tmp.name
 
-        pdf_path = html_path.replace(".html", ".pdf")
-        HTML(html_path).write_pdf(pdf_path)
-
-        with open(pdf_path, "rb") as f:
+        with open(tmp_path, "rb") as f:
             pdf_bytes = f.read()
 
         st.success("🎉 PDF 採購單轉單成功！")
