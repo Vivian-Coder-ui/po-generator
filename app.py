@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將自動判斷品項與規格，並自動更新收貨地址與單價 ÷ 6。")
+st.write("請上傳美加採購單檔案，系統將完整帶入三行品名規格資訊，並自動計算單價 ÷ 6。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -25,10 +25,11 @@ if uploaded_file is not None:
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 模擬從美加採購單解析出來的資料（以氮氣彈簧為例）
-    is_disk_spring = False  # 若為碟型彈簧且有規格請設為 True
-    item_code = "SBS750-038"
-    item_desc = "Simars 氮氣彈簧 SBS750-038"
+    # 完整對應截圖中的三行資訊
+    line1 = "SBS750-038"
+    line2 = "Simars 氮氣彈簧 SBS750-038"
+    line3 = "SBS750-038-171"
+    
     raw_unit_price = 1128.30
     qty = 20
     
@@ -36,25 +37,12 @@ if uploaded_file is not None:
     converted_unit_price = raw_unit_price / 6
     total_amount = qty * converted_unit_price
 
-    if is_disk_spring:
-        item_display = """
-            <strong>盤形彈簧 DB502530</strong><br>
-            <span style="font-size: 9pt; color: #555;">
-                規格尺寸: 50x25.4x3.0xH4.1 / 材質: 51CrV4<br>
-                <strong>DIN 2093 公差規範：</strong><br>
-                - 外徑 OD: 0 ~ -0.25 mm<br>
-                - 內徑 ID: 0 ~ +0.21 mm<br>
-                - 厚度 t : +0.04 ~ -0.12 mm<br>
-                - 高度 Lo: +0.20 ~ -0.10 mm
-            </span>
-        """
-    else:
-        item_display = f"""
-            <strong>{item_desc}</strong><br>
-            <span style="font-size: 9pt; color: #555;">
-                品號 (Item Code): {item_code}
-            </span>
-        """
+    # 將三行完整帶入
+    item_display = f"""
+        <strong>{line1}</strong><br>
+        <span>{line2}</span><br>
+        <span style="font-size: 9pt; color: #555;">專案代號/備註: {line3}</span>
+    """
 
     st.markdown("---")
     st.subheader("📋 採購單正式預覽與一鍵列印/存檔")
