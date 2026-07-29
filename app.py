@@ -1,10 +1,10 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="信可美採購單 PDF 轉單系統", layout="centered")
+st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，選擇供應商與交易條件，系統將自動產生正式採購單。")
+st.write("請上傳美加採購單檔案，系統將自動判斷是否為碟型彈簧與規格，自動套用對應格式與單價 ÷ 6。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -24,15 +24,44 @@ if uploaded_file is not None:
     st.success("✅ 客戶採購單已成功上傳！")
     
     sup_info = SUPPLIERS[target_supplier]
-    raw_unit_price = 10.86
-    qty = 10000
+
+    # 模擬從美加採購單解析出來的資料（以剛才的氮氣彈簧為例示範非碟型彈簧）
+    # 您後續若上傳碟型彈簧，只需調整 is_disk_spring = True 即可
+    is_disk_spring = False  # 判定是否為碟型彈簧且有規格
+    item_code = "SBS750-038"
+    item_desc = "Simars 氮氣彈簧 SBS750-038"
+    raw_unit_price = 1128.30
+    qty = 20
+    
+    # 單價自動除以 6
     converted_unit_price = raw_unit_price / 6
     total_amount = qty * converted_unit_price
+
+    # 根據條件產生對應的品名規格顯示內容
+    if is_disk_spring:
+        item_display = """
+            <strong>盤形彈簧 DB502530</strong><br>
+            <span style="font-size: 9pt; color: #555;">
+                規格尺寸: 50x25.4x3.0xH4.1 / 材質: 51CrV4<br>
+                <strong>DIN 2093 公差規範：</strong><br>
+                - 外徑 OD: 0 ~ -0.25 mm<br>
+                - 內徑 ID: 0 ~ +0.21 mm<br>
+                - 厚度 t : +0.04 ~ -0.12 mm<br>
+                - 高度 Lo: +0.20 ~ -0.10 mm
+            </span>
+        """
+    else:
+        # 不是碟型彈簧或無規格時，直接寫跟原本一樣的品號與品名
+        item_display = f"""
+            <strong>{item_desc}</strong><br>
+            <span style="font-size: 9pt; color: #555;">
+                品號 (Item Code): {item_code}
+            </span>
+        """
 
     st.markdown("---")
     st.subheader("📋 採購單正式預覽與一鍵列印/存檔")
 
-    # 包含專屬列印按鈕與完整公差規範的乾淨 HTML 範本
     html_code = f"""
     <!DOCTYPE html>
     <html>
@@ -81,7 +110,6 @@ if uploaded_file is not None:
         .text-right {{ text-align: right; }}
         .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
 
-        /* 專屬列印設定：列印時只印出 container 內容，隱藏按鈕本身 */
         @media print {{
             body {{ background: white; padding: 0; }}
             .container {{ border: none; box-shadow: none; padding: 0; max-width: 100%; }}
@@ -91,7 +119,6 @@ if uploaded_file is not None:
     </head>
     <body>
         <div class="container">
-            <!-- 專屬列印按鈕 -->
             <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為 PDF 檔</button>
 
             <h2>信可美股份有限公司</h2>
@@ -107,7 +134,7 @@ if uploaded_file is not None:
                     </td>
                     <td class="box" style="width: 50%; vertical-align: top;">
                         <strong>【採購資訊】</strong><br>
-                        採購單號：{target_supplier}20260729001<br>
+                        採購單號：{target_supplier}20260729002<br>
                         採購日期：2026/07/29<br>
                         交易條件：{incoterms}<br>
                         幣別：RMB
@@ -134,19 +161,9 @@ if uploaded_file is not None:
                 <tbody>
                     <tr>
                         <td>1</td>
-                        <td>
-                            <strong>盤形彈簧 DB502530</strong><br>
-                            <span style="font-size: 9pt; color: #555;">
-                                規格尺寸: 50x25.4x3.0xH4.1 / 材質: 51CrV4<br>
-                                <strong>DIN 2093 公差規範：</strong><br>
-                                - 外徑 OD: 0 ~ -0.25 mm<br>
-                                - 內徑 ID: 0 ~ +0.21 mm<br>
-                                - 厚度 t : +0.04 ~ -0.12 mm<br>
-                                - 高度 Lo: +0.20 ~ -0.10 mm
-                            </span>
-                        </td>
+                        <td>{item_display}</td>
                         <td class="text-right" style="vertical-align: top;">{qty:,}</td>
-                        <td class="text-right" style="vertical-align: top;">{converted_unit_price:.2f}</td>
+                        <td class="text-right" style="vertical-align: top;">{converted_unit_price:,.2f}</td>
                         <td class="text-right" style="vertical-align: top;">{total_amount:,.2f}</td>
                     </tr>
                 </tbody>
@@ -159,7 +176,7 @@ if uploaded_file is not None:
             <div class="terms">
                 <strong>【採購注意事項與條款】</strong><br>
                 1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
-                2. 公差必須於標準公差範圍內（DIN 2093）。<br>
+                2. 公差必須於標準公差範圍內（若適用）。<br>
                 3. 順豐帳號：8860743308<br>
                 4. 請做正式出口報關。
             </div>
@@ -168,5 +185,4 @@ if uploaded_file is not None:
     </html>
     """
 
-    # 將元件高度擴大，讓內建按鈕直接完美呈現
     components.html(html_code, height=820, scrolling=True)
