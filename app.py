@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="信可美採購單 PDF 轉單系統", layout="centered")
 
@@ -31,73 +32,108 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader("📋 採購單正式預覽")
 
-    # 完整排版的 HTML 程式碼
+    # 使用獨立的 HTML 元件渲染，保證排版完美、絕不印出程式碼
     html_code = f"""
-    <div style="background: white; padding: 25px; border: 1px solid #cbd5e1; border-radius: 8px; color: #333; font-family: Arial, sans-serif;">
-        <h2 style="color: #1a365d; margin-bottom: 0px;">信可美股份有限公司</h2>
-        <p style="color: #666; margin-top: 5px; font-size: 11pt;">PURCHASE ORDER (正式採購單)</p>
-        <hr style="border: 1px solid #1a365d;">
-        
-        <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
-            <tr>
-                <td style="width: 50%; vertical-align: top; background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0;">
-                    <strong>【供應商資訊】</strong><br>
-                    {sup_info['name']} ({target_supplier})<br>
-                    地址：{sup_info['addr']}
-                </td>
-                <td style="width: 50%; vertical-align: top; background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0;">
-                    <strong>【採購資訊】</strong><br>
-                    採購單號：{target_supplier}20260729001<br>
-                    採購日期：2026/07/29<br>
-                    交易條件：{incoterms}<br>
-                    幣別：RMB
-                </td>
-            </tr>
-        </table>
-
-        <div style="background: #f8fafc; padding: 12px; border-radius: 5px; margin-top: 12px; border: 1px solid #e2e8f0;">
-            <strong>【收貨與寄送資訊】</strong><br>
-            收貨公司：信可美股份有限公司<br>
-            收貨地址：新北市新莊區民安路207巷30弄8號1樓 (電話: 02-8201-4393)
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-            <thead>
-                <tr style="background-color: #1a365d; color: white;">
-                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left;">項次</th>
-                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: left;">品名與規格</th>
-                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">數量 (PCS)</th>
-                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">單價 (RMB)</th>
-                    <th style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">金額 (RMB)</th>
-                </tr>
-            </thead>
-            <tbody>
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <style>
+        body {{
+            background: white;
+            color: #333;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+        }}
+        .container {{
+            max-width: 700px;
+            margin: auto;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 25px;
+            background: white;
+        }}
+        h2 {{ color: #1a365d; margin-bottom: 0px; }}
+        .subtitle {{ color: #666; margin-top: 5px; font-size: 11pt; }}
+        hr {{ border: 1px solid #1a365d; }}
+        .grid {{ width: 100%; margin-top: 15px; border-collapse: collapse; }}
+        .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 10pt; }}
+        table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+        table.items th, table.items td {{ border: 1px solid #cbd5e1; padding: 10px; font-size: 10pt; }}
+        table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
+        .text-right {{ text-align: right; }}
+        .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.4; color: #444; }}
+    </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>信可美股份有限公司</h2>
+            <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
+            <hr>
+            
+            <table class="grid">
                 <tr>
-                    <td style="padding: 10px; border: 1px solid #cbd5e1;">1</td>
-                    <td style="padding: 10px; border: 1px solid #cbd5e1;">盤形彈簧 DB502530<br><span style="font-size: 9pt; color: #555;">規格: 50x25.4x3.0xH4.1 / 材質: 51CrV4 (DIN 2093 公差)</span></td>
-                    <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">{qty:,}</td>
-                    <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">{converted_unit_price:.2f}</td>
-                    <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right;">{total_amount:,.2f}</td>
+                    <td class="box" style="width: 50%; vertical-align: top;">
+                        <strong>【供應商資訊】</strong><br>
+                        {sup_info['name']} ({target_supplier})<br>
+                        地址：{sup_info['addr']}
+                    </td>
+                    <td class="box" style="width: 50%; vertical-align: top;">
+                        <strong>【採購資訊】</strong><br>
+                        採購單號：{target_supplier}20260729001<br>
+                        採購日期：2026/07/29<br>
+                        交易條件：{incoterms}<br>
+                        幣別：RMB
+                    </td>
                 </tr>
-            </tbody>
-        </table>
+            </table>
 
-        <div style="text-align: right; font-size: 13pt; font-weight: bold; margin-top: 15px;">
-            未稅總金額 (Total RMB)：RMB {total_amount:,.2f}
-        </div>
+            <div class="box" style="margin-top: 12px;">
+                <strong>【收貨與寄送資訊】</strong><br>
+                收貨公司：信可美股份有限公司<br>
+                收貨地址：新北市新莊區民安路207巷30弄8號1樓 (電話: 02-8201-4393)
+            </div>
 
-        <div style="background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.4;">
-            <strong>【採購注意事項與條款】</strong><br>
-            1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
-            2. 公差必須於標準公差範圍內（DIN 2093）。<br>
-            3. 順豐帳號：8860743308<br>
-            4. 請做正式出口報關。
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th>項次</th>
+                        <th>品名與規格</th>
+                        <th class="text-right">數量 (PCS)</th>
+                        <th class="text-right">單價 (RMB)</th>
+                        <th class="text-right">金額 (RMB)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>盤形彈簧 DB502530<br><span style="font-size: 9pt; color: #555;">規格: 50x25.4x3.0xH4.1 / 材質: 51CrV4 (DIN 2093 公差)</span></td>
+                        <td class="text-right">{qty:,}</td>
+                        <td class="text-right">{converted_unit_price:.2f}</td>
+                        <td class="text-right">{total_amount:,.2f}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
+                未稅總金額 (Total RMB)：RMB {total_amount:,.2f}
+            </div>
+
+            <div class="terms">
+                <strong>【採購注意事項與條款】</strong><br>
+                1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
+                2. 公差必須於標準公差範圍內（DIN 2093）。<br>
+                3. 順豐帳號：8860743308<br>
+                4. 請做正式出口報關。
+            </div>
         </div>
-    </div>
+    </body>
+    </html>
     """
 
-    # 確保加上了 unsafe_allow_html=True，這樣排版就會完美呈現！
-    st.markdown(html_code, unsafe_allow_html=True)
+    # 使用元件完美渲染，並設定足夠的高度讓捲軸不用卡在框框裡
+    components.html(html_code, height=650, scrolling=True)
 
     st.markdown("---")
-    st.info("📥 **如何存成 PDF 給供應商？**\n1. 直接按下鍵盤 **`Ctrl + P`** (Mac 請按 `Cmd + P`)。\n2. 在右側列印選單中，將「目的地」改成 **「另存為 PDF (Save as PDF)」**。\n3. 點擊 **儲存**，就能得到乾淨漂亮的正式 PDF 檔，再直接透過 Email 或微信傳給供應商即可！")
+    st.info("📥 **如何存成 PDF 給供應商？**\n1. 直接按下鍵盤 **`Ctrl + P`** (Mac 請按 `Cmd + P`)。\n2. 在右側列印選單中，將「目的地」改成 **「另存為 PDF (Save as PDF)」**。\n3. 點擊 **儲存**，就能得到完美的正式 PDF 檔，直接寄給供應商囉！")
