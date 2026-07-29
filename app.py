@@ -11,7 +11,6 @@ SUPPLIERS = {
     "XB": {"name": "天津新北機電五金有限公司", "addr": "天津開發區第五大街12號 (4號廠房)"}
 }
 
-# 1. 把上傳檔案功能加回來
 uploaded_file = st.file_uploader("📤 請上傳美加採購單檔案 (.pdf / 截圖)", type=["pdf", "png", "jpg", "jpeg"])
 
 col1, col2 = st.columns(2)
@@ -32,7 +31,7 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader("📋 採購單正式預覽")
 
-    # 2. 使用 unsafe_allow_html=True 讓排版完美呈現
+    # 完整排版的 HTML 程式碼
     html_code = f"""
     <div style="background: white; padding: 25px; border: 1px solid #cbd5e1; border-radius: 8px; color: #333; font-family: Arial, sans-serif;">
         <h2 style="color: #1a365d; margin-bottom: 0px;">信可美股份有限公司</h2>
@@ -97,7 +96,8 @@ if uploaded_file is not None:
     </div>
     """
 
+    # 確保加上了 unsafe_allow_html=True，這樣排版就會完美呈現！
     st.markdown(html_code, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.info("📥 **如何存成 PDF 檔？**\n1. 直接按下鍵盤 **`Ctrl + P`** (Mac 請按 `Cmd + P`)。\n2. 在右側列印選單中，將「目的地」改成 **「另存為 PDF (Save as PDF)」**。\n3. 點擊 **列印**，就能完美儲存成 PDF 檔囉！")
+    st.info("📥 **如何存成 PDF 給供應商？**\n1. 直接按下鍵盤 **`Ctrl + P`** (Mac 請按 `Cmd + P`)。\n2. 在右側列印選單中，將「目的地」改成 **「另存為 PDF (Save as PDF)」**。\n3. 點擊 **儲存**，就能得到乾淨漂亮的正式 PDF 檔，再直接透過 Email 或微信傳給供應商即可！")
