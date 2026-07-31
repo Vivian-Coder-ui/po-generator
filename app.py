@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將直接呈現三行品名規格資訊，並自動計算單價 ÷ 6。")
+st.write("請上傳美加採購單檔案，系統將自動解析多筆品項、多行規格，並將所有單價自動除以 6。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -25,23 +25,46 @@ if uploaded_file is not None:
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 直接呈現三行資訊，不加額外文字說明
-    line1 = "SBS750-038"
-    line2 = "Simars 氮氣彈簧 SBS750-038"
-    line3 = "SBS750-038-171"
-    
-    raw_unit_price = 1128.30
-    qty = 20
-    
-    # 單價自動除以 6
-    converted_unit_price = raw_unit_price / 6
-    total_amount = qty * converted_unit_price
+    # 模擬從多筆品項採購單解析出來的清單
+    items = [
+        {
+            "line1": "SBS750-038",
+            "line2": "Simars 氮氣彈簧 SBS750-038",
+            "line3": "SBS750-038-171",
+            "qty": 40,
+            "raw_price": 1128.30
+        },
+        {
+            "line1": "SBS750-100",
+            "line2": "Simars 氮氣彈簧 SBS750-100",
+            "line3": "SBS750-100-295 M8維修孔",
+            "qty": 20,
+            "raw_price": 1282.20
+        }
+    ]
 
-    item_display = f"""
-        <strong>{line1}</strong><br>
-        <span>{line2}</span><br>
-        <span>{line3}</span>
-    """
+    # 動態產生表格列與總金額計算
+    table_rows_html = ""
+    grand_total = 0
+
+    for idx, item in enumerate(items, 1):
+        conv_price = item["raw_price"] / 6
+        subtotal = item["qty"] * conv_price
+        grand_total += subtotal
+
+        table_rows_html += f"""
+        <tr>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx}</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
+                <strong>{item['line1']}</strong><br>
+                <span>{item['line2']}</span><br>
+                <span>{item['line3']}</span>
+            </td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{item['qty']:,}</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{conv_price:,.2f}</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
+        </tr>
+        """
 
     st.markdown("---")
     st.subheader("📋 採購單正式預覽與一鍵列印/存檔")
@@ -143,18 +166,12 @@ if uploaded_file is not None:
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>{item_display}</td>
-                        <td class="text-right" style="vertical-align: top;">{qty:,}</td>
-                        <td class="text-right" style="vertical-align: top;">{converted_unit_price:,.2f}</td>
-                        <td class="text-right" style="vertical-align: top;">{total_amount:,.2f}</td>
-                    </tr>
+                    {table_rows_html}
                 </tbody>
             </table>
 
             <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
-                未稅總金額 (Total RMB)：RMB {total_amount:,.2f}
+                未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
             </div>
 
             <div class="terms">
@@ -169,4 +186,4 @@ if uploaded_file is not None:
     </html>
     """
 
-    components.html(html_code, height=820, scrolling=True)
+    components.html(html_code, height=900, scrolling=True)
