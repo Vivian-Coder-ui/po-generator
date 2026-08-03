@@ -1,18 +1,11 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import google.generativeai as genai
-from PIL import Image
-import json
-import os
+import pandas as pd
+import io
 
-st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
+st.set_page_config(page_title="信可美採購單 Excel 智慧轉單系統", layout="centered")
 
-st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳任意美加採購單截圖或 PDF，AI 將自動為您判讀所有品項與數量！")
-
-# 嘗試自動設定 Gemini API Key（讀取 Streamlit Secrets）
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+st.title("📄 信可美採購單 Excel 智慧轉單系統")
+st.write("請上傳美加採購單 Excel 檔，系統將自動讀取所有品項與數量，您只需輸入 RMB 單價即可一鍵轉出正式採購單！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -22,7 +15,7 @@ SUPPLIERS = {
     "EX": {"name": "毅骉智造新材料科技（太倉）有限公司", "addr": "江蘇省蘇州市太倉市陳門泾路69號11幢"}
 }
 
-uploaded_file = st.file_uploader("📤 請上傳美加採購單檔案 (.pdf / 截圖)", type=["pdf", "png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("📤 請上傳美加採購單 Excel 檔 (.xlsx)", type=["xlsx", "xls"])
 
 col1, col2 = st.columns(2)
 with col1:
@@ -30,211 +23,103 @@ with col1:
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
-items = []
-
 if uploaded_file is not None:
-    st.success("✅ 檔案已上傳，AI 正在自動分析採購單明細...")
-    
     try:
-        image = Image.open(uploaded_file)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        # 自動讀取上傳的 Excel 檔案
+        xls = pd.ExcelFile(uploaded_file)
         
-        prompt = """
-        請仔細辨識這張採購單圖片中的所有明細項目。
-        請找出每一個項目的：
-        1. 品號 (line1)
-        2. 品名與規格 (line2)
-        3. 廠商品號或備註或專案代號 (line3，若無則留空)
-        4. 採購數量 (qty，數字格式)
-        
-        請嚴格以 JSON 格式回傳一個包含清單的物件，不要包含其他多餘文字。格式如下：
-        [
-          {
-            "line1": "品號",
-            "line2": "品名與規格",
-            "line3": "備註",
-            "qty": 數量
-          }
-        ]
-        """
-        response = model.generate_content([image, prompt])
-        clean_text = response.text.replace("```json", "").replace("```", "").strip()
-        items = json.loads(clean_text)
-        st.success(f"🎉 AI 成功自動辨識出 {len(items)} 筆品項！")
-        
-    except Exception as e:
-        st.warning("⚠️ 無法連線至 AI 辨識或尚未設定 API Key，請檢查 Secrets 設定。已切換至手動預設欄位。")
-        items = [
-            {
-                "line1": "KA2357-01",
-                "line2": "壓簧 d7.5*0029.8*1.500",
-                "line3": "",
-                "qty": 5
-            }
-        ]
+        # 尋找「單身資料」分頁
+        if '單身資料' in xls.sheet_names:
+            # 美加的 Excel 通常標題在第 1 行或第 2 行，我們用 header=1 讀取
+            df_body = pd.read_excel(uploaded_file, sheet_name='單身資料', header=1)
+        else:
+            df_body = pd.read_excel(uploaded_file, sheet_name=0)
 
-    st.markdown("---")
-    st.subheader("✍️ 輸入各品項 RMB 單價")
-
-    manual_prices = []
-    for idx, item in enumerate(items):
-        st.markdown(f"**【項次 {idx+1}】** 品號: `{item.get('line1', '')}` | 品名: `{item.get('line2', '')}` | 數量: **{item.get('qty', 1)} PCS**")
-        price = st.number_input(
-            f"請輸入項次 {idx+1} 的 RMB 單價",
-            min_value=0.0,
-            value=0.0,
-            step=0.01,
-            format="%.2f",
-            key=f"price_{idx}"
-        )
-        manual_prices.append(price)
-        st.markdown("")
-
-    sup_info = SUPPLIERS[target_supplier]
-    table_rows_html = ""
-    grand_total = 0
-
-    for idx, item in enumerate(items):
-        unit_price = manual_prices[idx]
-        qty = int(item.get('qty', 1))
-        subtotal = qty * unit_price
-        grand_total += subtotal
-
-        line3_val = item.get('line3', '')
-        line3_html = f"<br><span>{line3_val}</span>" if line3_val else ""
-
-        table_rows_html += f"""
-        <tr>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx+1}</td>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
-                <strong>{item.get('line1', '')}</strong><br>
-                <span>{item.get('line2', '')}</span>
-                {line3_html}
-            </td>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{qty:,}</td>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
-        </tr>
-        """
-
-    st.markdown("---")
-    st.subheader("📋 採購單正式預覽與一鍵列印/存檔")
-
-    html_code = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-        body {{
-            background: #f8fafc;
-            color: #333;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-        }}
-        .container {{
-            max-width: 750px;
-            margin: auto;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 30px;
-            background: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }}
-        .print-btn {{
-            background-color: #1a365d;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 14pt;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            display: block;
-            margin: 0 auto 25px auto;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }}
-        .print-btn:hover {{ background-color: #2a4365; }}
-        h2 {{ color: #1a365d; margin-bottom: 0px; }}
-        .subtitle {{ color: #666; margin-top: 5px; font-size: 11pt; }}
-        hr {{ border: 1px solid #1a365d; }}
-        .grid {{ width: 100%; margin-top: 15px; border-collapse: collapse; }}
-        .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 10pt; line-height: 1.5; }}
-        table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
-        table.items th, table.items td {{ border: 1px solid #cbd5e1; padding: 10px; font-size: 10pt; }}
-        table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
-        .text-right {{ text-align: right; }}
-        .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
-
-        @media print {{
-            body {{ background: white; padding: 0; }}
-            .container {{ border: none; box-shadow: none; padding: 0; max-width: 100%; }}
-            .print-btn {{ display: none; }}
-        }}
-    </style>
-    </head>
-    <body>
-        <div class="container">
-            <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為 PDF 檔</button>
-
-            <h2>信可美股份有限公司</h2>
-            <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
-            <hr>
+        # 清理並擷取需要的欄位 (品號、品名、規格、數量)
+        # 確保抓到正確的欄位名稱
+        items_data = []
+        for idx, row in df_body.iterrows():
+            item_code = str(row.get('品號', '')).strip()
+            # 如果品號欄位是空的或是標題行，就跳過
+            if not item_code or item_code == 'nan' or item_code == '品號':
+                continue
             
-            <table class="grid">
-                <tr>
-                    <td class="box" style="width: 50%; vertical-align: top;">
-                        <strong>【供應商資訊】</strong><br>
-                        {sup_info['name']} ({target_supplier})<br>
-                        地址：{sup_info['addr']}
-                    </td>
-                    <td class="box" style="width: 50%; vertical-align: top;">
-                        <strong>【採購資訊】</strong><br>
-                        採購單號：{target_supplier}20260803001<br>
-                        採購日期：2026/08/03<br>
-                        交易條件：{incoterms}<br>
-                        幣別：RMB
-                    </td>
-                </tr>
-            </table>
+            item_name = str(row.get('品名', '')).strip()
+            spec = str(row.get('規格', '')).strip()
+            # 組合品名與規格
+            full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
+            
+            try:
+                qty = float(row.get('採購數量', 1))
+            except:
+                qty = 1.0
 
-            <div class="box" style="margin-top: 12px;">
-                <strong>【收貨與寄送資訊】</strong><br>
-                收貨公司：信可美股份有限公司<br>
-                收貨地址：338桃園市蘆竹區安中街20巷13號4樓 (電話: 02-8201-4393)
-            </div>
+            items_data.append({
+                "項次": len(items_data) + 1,
+                "品號": item_code,
+                "品名與規格": full_name,
+                "數量": qty,
+                "RMB單價": 0.00
+            })
 
-            <table class="items">
-                <thead>
-                    <tr>
-                        <th>項次</th>
-                        <th>品名與規格</th>
-                        <th class="text-right">數量 (PCS)</th>
-                        <th class="text-right">單價 (RMB)</th>
-                        <th class="text-right">金額 (RMB)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {table_rows_html}
-                </tbody>
-            </table>
+        if not items_data:
+            st.warning("⚠️ 讀取不到品項資料，請確認 Excel 格式是否正確。已載入預設編輯區：")
+            items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
 
-            <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
-                未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
-            </div>
+        df_items = pd.DataFrame(items_data)
+        st.success(f"✅ 成功從上傳的 Excel 自動擷取到 {len(df_items)} 筆品項明細！")
 
-            <div class="terms">
-                <strong>【採購注意事項與條款】</strong><br>
-                1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
-                2. 公差必須於標準公差範圍內（若適用）。<br>
-                3. 順豐帳號：8860743308<br>
-                4. 請做正式出口報關。
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+        st.markdown("---")
+        st.subheader("✍️ 請在下方填入各品項的 RMB 單價")
+        
+        # 讓使用者直接在互動表格中填寫 RMB 單價
+        edited_df = st.data_editor(
+            df_items,
+            num_rows="fixed",
+            use_container_width=True,
+            key="excel_price_editor"
+        )
 
-    components.html(html_code, height=950, scrolling=True)
+        # 計算總金額
+        total_amount = 0
+        for idx, row in edited_df.iterrows():
+            q = float(row.get('數量', 0))
+            p = float(row.get('RMB單價', 0))
+            total_amount += q * p
+
+        st.markdown(f"### 💰 未稅總金額 (Total RMB)：**RMB {total_amount:,.2f}**")
+
+        st.markdown("---")
+        st.subheader("📥 產出正式採購單")
+
+        # 產生下載 Excel 按鈕
+        sup_info = SUPPLIERS[target_supplier]
+        
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            # 建立信可美正式採購單格式
+            po_header = pd.DataFrame([
+                {"欄位": "供應商代號", "內容": f"{target_supplier} ({sup_info['name']})"},
+                {"欄位": "供應商地址", "內容": sup_info['addr']},
+                {"欄位": "採購單號", "內容": f"{target_supplier}20260803001"},
+                {"欄位": "採購日期", "內容": "2026/08/03"},
+                {"欄位": "交易條件", "內容": incoterms},
+                {"欄位": "幣別", "內容": "RMB"},
+                {"欄位": "收貨地址", "內容": "338桃園市蘆竹區安中街20巷13號4樓 (電話: 02-8201-4393)"}
+            ])
+            po_header.to_excel(writer, sheet_name='採購單頭', index=False)
+            edited_df.to_excel(writer, sheet_name='採購明細', index=False)
+            
+        output.seek(0)
+        
+        st.download_button(
+            label="📥 下載信可美正式採購單 (.xlsx)",
+            data=output,
+            file_name=f"PO_{target_supplier}_20260803.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary"
+        )
+
+    except Exception as e:
+        st.error(f"❌ 讀取 Excel 發生錯誤：{e}")
+        st.write("請確保上傳的是如 PURI07_2.XLSX 這樣標準結構的採購單 Excel 檔案。")
