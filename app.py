@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳採購單檔案，系統將自動擷取品項，並可手動輸入供應商 RMB 單價。")
+st.write("請上傳採購單檔案，並在下方直接手動輸入供應商的 RMB 單價。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -22,35 +22,36 @@ with col1:
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
+# 固定品項資料
+items = [
+    {
+        "line1": "KA2357-01",
+        "line2": "壓簧 d7.5*0029.8*1.500",
+        "line3": "",
+        "qty": 5
+    }
+]
+
+# 讓使用者直接在畫面上手動輸入單價
+st.markdown("---")
+st.subheader("✍️ 手動輸入各品項 RMB 單價")
+
+manual_prices = []
+for idx, item in enumerate(items):
+    p = st.number_input(
+        f"項次 {idx+1}：{item['line1']} ({item['line2']}) ｜ 數量: {item['qty']} PCS",
+        min_value=0.0,
+        value=0.0,
+        step=0.01,
+        format="%.2f",
+        key=f"price_{idx}"
+    )
+    manual_prices.append(p)
+
 if uploaded_file is not None:
-    st.success("✅ 客戶採購單已成功上傳！請在下方手動輸入各品項的 RMB 單價：")
+    st.success("✅ 客戶採購單已成功上傳！")
     
     sup_info = SUPPLIERS[target_supplier]
-
-    # 解析出來的品項與數量
-    items = [
-        {
-            "line1": "KA2357-01",
-            "line2": "壓簧 d7.5*0029.8*1.500",
-            "line3": "",
-            "qty": 5
-        }
-    ]
-
-    # 手動 KEY 單價區塊
-    st.markdown("---")
-    st.subheader("✍️ 手動輸入供應商採購單價 (RMB)")
-    
-    manual_prices = []
-    for idx, item in enumerate(items):
-        p = st.number_input(
-            f"項次 {idx+1}：{item['line1']} ({item['line2']}) - 數量: {item['qty']} PCS 的 RMB 單價",
-            min_value=0.0,
-            value=0.0,
-            step=0.01,
-            format="%.2f"
-        )
-        manual_prices.append(p)
 
     table_rows_html = ""
     grand_total = 0
