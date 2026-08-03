@@ -9,14 +9,16 @@ st.write("請上傳美加採購單檔案，系統將自動解析多筆品項、�
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
     "VS": {"name": "常州西科德彈簧有限公司", "addr": "中國常州新北區寶塔山路108號"},
-    "XB": {"name": "天津新北機電五金有限公司", "addr": "天津開發區第五大街12號 (4號廠房)"}
+    "XB": {"name": "天津新北機電五金有限公司", "addr": "天津開發區第五大街12號 (4號廠房)"},
+    "YX": {"name": "上海允新機械零部件有限公司", "addr": "上海市嘉定區菊園新區環城路2222號"},
+    "EX": {"name": "毅骉智造新材料科技（太倉）有限公司", "addr": "江蘇省蘇州市太倉市陳門泾路69號11幢"}
 }
 
 uploaded_file = st.file_uploader("📤 請上傳美加採購單檔案 (.pdf / 截圖)", type=["pdf", "png", "jpg", "jpeg"])
 
 col1, col2 = st.columns(2)
 with col1:
-    target_supplier = st.selectbox("🎯 選擇發給哪家供應商", ["SF", "VS", "XB"])
+    target_supplier = st.selectbox("🎯 選擇發給哪家供應商", ["SF", "VS", "XB", "YX", "EX"])
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
@@ -25,7 +27,7 @@ if uploaded_file is not None:
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 模擬從多筆品項採購單解析出來的清單
+    # 多筆品項示範清單
     items = [
         {
             "line1": "SBS750-038",
@@ -43,7 +45,6 @@ if uploaded_file is not None:
         }
     ]
 
-    # 動態產生表格列與總金額計算
     table_rows_html = ""
     grand_total = 0
 
