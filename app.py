@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 import io
+import zipfile
+import xml.etree.ElementTree as ET
+import openpyxl
 
 st.set_page_config(page_title="信可美採購單 Excel 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 Excel 智慧轉單系統")
-st.write("請上傳美加採購單 Excel 檔，系統將自動讀取所有品項與數量，您只需輸入 RMB 單價即可一鍵轉出正式採購單！")
+st.write("請上傳美加採購單 Excel 檔，系統將自動修復格式並讀取所有品項與數量！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -25,28 +28,46 @@ with col2:
 
 if uploaded_file is not None:
     try:
-        # 自動讀取上傳的 Excel 檔案
-        xls = pd.ExcelFile(uploaded_file)
+        # 自動修復 openpyxl 讀取美加 Excel 常見的 NamedCellStyle 錯誤
+        file_bytes = uploaded_file.read()
+        fixed_io = io.BytesIO()
         
-        # 尋找「單身資料」分頁
-        if '單身資料' in xls.sheet_names:
-            # 美加的 Excel 通常標題在第 1 行或第 2 行，我們用 header=1 讀取
-            df_body = pd.read_excel(uploaded_file, sheet_name='單身資料', header=1)
-        else:
-            df_body = pd.read_excel(uploaded_file, sheet_name=0)
+        try:
+            with zipfile.ZipFile(io.BytesIO(file_bytes), 'r') as zin:
+                with zipfile.ZipFile(fixed_io, 'w') as zout:
+                    for item in zin.infolist():
+                        buffer = zin.read(item.filename)
+                        if item.filename == 'xl/styles.xml':
+                            root = ET.fromstring(buffer)
+                            for elem in root.iter():
+                                if elem.tag.endswith('cellStyle') and ('name' not in elem.attrib or not elem.attrib['name']):
+                                    elem.attrib['name'] = 'Normal'
+                            buffer = ET.tostring(root)
+                        zout.writestr(item, buffer)
+            fixed_io.seek(0)
+            excel_to_read = fixed_io
+        except Exception:
+            # 若不是 zip 格式或無須修復則直接使用原檔
+            fixed_io.seek(0)
+            file_bytes_io = io.BytesIO(file_bytes)
+            file_bytes_io.seek(0)
+            excel_to_read = file_bytes_io
 
-        # 清理並擷取需要的欄位 (品號、品名、規格、數量)
-        # 確保抓到正確的欄位名稱
+        # 讀取 Excel 的「單身資料」分頁
+        xls = pd.ExcelFile(excel_to_read)
+        if '單身資料' in xls.sheet_names:
+            df_body = pd.read_excel(excel_to_read, sheet_name='單身資料', header=1)
+        else:
+            df_body = pd.read_excel(excel_to_read, sheet_name=0)
+
         items_data = []
         for idx, row in df_body.iterrows():
             item_code = str(row.get('品號', '')).strip()
-            # 如果品號欄位是空的或是標題行，就跳過
             if not item_code or item_code == 'nan' or item_code == '品號':
                 continue
             
             item_name = str(row.get('品名', '')).strip()
             spec = str(row.get('規格', '')).strip()
-            # 組合品名與規格
             full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
             
             try:
@@ -67,12 +88,11 @@ if uploaded_file is not None:
             items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
 
         df_items = pd.DataFrame(items_data)
-        st.success(f"✅ 成功從上傳的 Excel 自動擷取到 {len(df_items)} 筆品項明細！")
+        st.success(f"✅ 成功從 Excel 自動擷取到 {len(df_items)} 筆品項明細！")
 
         st.markdown("---")
         st.subheader("✍️ 請在下方填入各品項的 RMB 單價")
         
-        # 讓使用者直接在互動表格中填寫 RMB 單價
         edited_df = st.data_editor(
             df_items,
             num_rows="fixed",
@@ -80,7 +100,6 @@ if uploaded_file is not None:
             key="excel_price_editor"
         )
 
-        # 計算總金額
         total_amount = 0
         for idx, row in edited_df.iterrows():
             q = float(row.get('數量', 0))
@@ -92,12 +111,10 @@ if uploaded_file is not None:
         st.markdown("---")
         st.subheader("📥 產出正式採購單")
 
-        # 產生下載 Excel 按鈕
         sup_info = SUPPLIERS[target_supplier]
         
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # 建立信可美正式採購單格式
             po_header = pd.DataFrame([
                 {"欄位": "供應商代號", "內容": f"{target_supplier} ({sup_info['name']})"},
                 {"欄位": "供應商地址", "內容": sup_info['addr']},
