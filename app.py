@@ -32,14 +32,14 @@ items = [
     }
 ]
 
-# 讓使用者直接在畫面上手動輸入單價
+# 讓使用者直接在畫面上手動輸入單價（精簡標籤為「項次 1」）
 st.markdown("---")
 st.subheader("✍️ 手動輸入各品項 RMB 單價")
 
 manual_prices = []
 for idx, item in enumerate(items):
     p = st.number_input(
-        f"項次 {idx+1}：{item['line1']} ({item['line2']}) ｜ 數量: {item['qty']} PCS",
+        f"項次 {idx+1}",
         min_value=0.0,
         value=0.0,
         step=0.01,
