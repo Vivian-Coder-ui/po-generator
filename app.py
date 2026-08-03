@@ -8,7 +8,7 @@ import openpyxl
 st.set_page_config(page_title="信可美採購單 Excel 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 Excel 智慧轉單系統")
-st.write("請上傳美加採購單 Excel 檔，系統將自動修復格式並讀取所有品項與數量！")
+st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項與數量，您只需輸入 RMB 單價即可！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -47,44 +47,78 @@ if uploaded_file is not None:
             fixed_io.seek(0)
             excel_to_read = fixed_io
         except Exception:
-            # 若不是 zip 格式或無須修復則直接使用原檔
             fixed_io.seek(0)
             file_bytes_io = io.BytesIO(file_bytes)
             file_bytes_io.seek(0)
             excel_to_read = file_bytes_io
 
-        # 讀取 Excel 的「單身資料」分頁
+        # 讀取 Excel 的「單身資料」分頁（不帶 header，直接抓 raw data 來對應欄位）
         xls = pd.ExcelFile(excel_to_read)
         if '單身資料' in xls.sheet_names:
-            df_body = pd.read_excel(excel_to_read, sheet_name='單身資料', header=1)
+            df_body = pd.read_excel(excel_to_read, sheet_name='單身資料', header=None)
         else:
-            df_body = pd.read_excel(excel_to_read, sheet_name=0)
+            df_body = pd.read_excel(excel_to_read, sheet_name=0, header=None)
 
         items_data = []
+        # 從第 3 列（index 2）開始尋找資料
+        start_row = False
         for idx, row in df_body.iterrows():
-            item_code = str(row.get('品號', '')).strip()
-            if not item_code or item_code == 'nan' or item_code == '品號':
+            col_0 = str(row.get(0, '')).strip()
+            col_1 = str(row.get(1, '')).strip()
+            
+            # 當遇到「序號」表頭時，下一列開始就是品項
+            if col_0 == '序號' or col_1 == '品號':
+                start_row = True
                 continue
             
-            item_name = str(row.get('品名', '')).strip()
-            spec = str(row.get('規格', '')).strip()
-            full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
-            
-            try:
-                qty = float(row.get('採購數量', 1))
-            except:
-                qty = 1.0
+            if start_row:
+                # 如果品號欄位是空的、nan 或者是「以下空白」，就停止
+                if not col_1 or col_1 == 'nan' or '以下空白' in col_1:
+                    continue
+                
+                item_code = col_1
+                item_name = str(row.get(2, '')).strip()
+                spec = str(row.get(6, '')).strip() # 規格在第 6 欄
+                
+                # 組合品名與規格
+                full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
+                
+                try:
+                    qty = float(row.get(3, 1)) # 數量在第 3 欄
+                except:
+                    qty = 1.0
 
-            items_data.append({
-                "項次": len(items_data) + 1,
-                "品號": item_code,
-                "品名與規格": full_name,
-                "數量": qty,
-                "RMB單價": 0.00
-            })
+                items_data.append({
+                    "項次": len(items_data) + 1,
+                    "品號": item_code,
+                    "品名與規格": full_name,
+                    "數量": qty,
+                    "RMB單價": 0.00
+                })
 
         if not items_data:
-            st.warning("⚠️ 讀取不到品項資料，請確認 Excel 格式是否正確。已載入預設編輯區：")
+            # 備用保險：如果沒抓到，嘗試直接依賴欄位名稱讀取
+            df_named = pd.read_excel(excel_to_read, sheet_name='單身資料', header=2)
+            for idx, row in df_named.iterrows():
+                item_code = str(row.get('品號', '')).strip()
+                if not item_code or item_code == 'nan' or item_code == '品號':
+                    continue
+                item_name = str(row.get('品名', '')).strip()
+                spec = str(row.get('規格', '')).strip()
+                full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
+                try:
+                    qty = float(row.get('採購數量', 1))
+                except:
+                    qty = 1.0
+                items_data.append({
+                    "項次": len(items_data) + 1,
+                    "品號": item_code,
+                    "品名與規格": full_name,
+                    "數量": qty,
+                    "RMB單價": 0.00
+                })
+
+        if not items_data:
             items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
 
         df_items = pd.DataFrame(items_data)
