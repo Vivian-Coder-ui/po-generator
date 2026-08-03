@@ -1,10 +1,18 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import google.generativeai as genai
+from PIL import Image
+import json
+import os
 
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將自動帶入對應品項與數量，您只需輸入 RMB 單價即可！")
+st.write("請上傳任意美加採購單截圖或 PDF，AI 將自動為您判讀所有品項與數量！")
+
+# 嘗試自動設定 Gemini API Key（讀取 Streamlit Secrets）
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -25,28 +33,37 @@ with col2:
 items = []
 
 if uploaded_file is not None:
-    filename = uploaded_file.name
-    st.success(f"✅ 檔案「{filename}」已成功上傳，系統已自動擷取採購明細！")
+    st.success("✅ 檔案已上傳，AI 正在自動分析採購單明細...")
     
-    sup_info = SUPPLIERS[target_supplier]
-
-    # 智慧對應：根據檔名自動抓取對應的真實採購品項與數量
-    if "002" in filename or "SBS" in filename:
-        items = [
-            {
-                "line1": "SBS750-038",
-                "line2": "Simars 氮氣彈簧 SBS750-038",
-                "line3": "SBS750-038-171",
-                "qty": 40
-            },
-            {
-                "line1": "SBS750-100",
-                "line2": "Simars 氮氣彈簧 SBS750-100",
-                "line3": "M8維修孔",
-                "qty": 20
-            }
+    try:
+        image = Image.open(uploaded_file)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = """
+        請仔細辨識這張採購單圖片中的所有明細項目。
+        請找出每一個項目的：
+        1. 品號 (line1)
+        2. 品名與規格 (line2)
+        3. 廠商品號或備註或專案代號 (line3，若無則留空)
+        4. 採購數量 (qty，數字格式)
+        
+        請嚴格以 JSON 格式回傳一個包含清單的物件，不要包含其他多餘文字。格式如下：
+        [
+          {
+            "line1": "品號",
+            "line2": "品名與規格",
+            "line3": "備註",
+            "qty": 數量
+          }
         ]
-    elif "KA" in filename or "001" in filename:
+        """
+        response = model.generate_content([image, prompt])
+        clean_text = response.text.replace("```json", "").replace("```", "").strip()
+        items = json.loads(clean_text)
+        st.success(f"🎉 AI 成功自動辨識出 {len(items)} 筆品項！")
+        
+    except Exception as e:
+        st.warning("⚠️ 無法連線至 AI 辨識或尚未設定 API Key，請檢查 Secrets 設定。已切換至手動預設欄位。")
         items = [
             {
                 "line1": "KA2357-01",
@@ -55,23 +72,13 @@ if uploaded_file is not None:
                 "qty": 5
             }
         ]
-    else:
-        # 預設對應您上傳的標準氮氣彈簧清單
-        items = [
-            {
-                "line1": "SBS750-038",
-                "line2": "Simars 氮氣彈簧 SBS750-038",
-                "line3": "SBS750-038-171",
-                "qty": 40
-            }
-        ]
 
     st.markdown("---")
     st.subheader("✍️ 輸入各品項 RMB 單價")
 
     manual_prices = []
     for idx, item in enumerate(items):
-        st.markdown(f"**【項次 {idx+1}】** 品號: `{item['line1']}` | 品名: `{item['line2']}` | 數量: **{item['qty']} PCS**")
+        st.markdown(f"**【項次 {idx+1}】** 品號: `{item.get('line1', '')}` | 品名: `{item.get('line2', '')}` | 數量: **{item.get('qty', 1)} PCS**")
         price = st.number_input(
             f"請輸入項次 {idx+1} 的 RMB 單價",
             min_value=0.0,
@@ -83,25 +90,28 @@ if uploaded_file is not None:
         manual_prices.append(price)
         st.markdown("")
 
+    sup_info = SUPPLIERS[target_supplier]
     table_rows_html = ""
     grand_total = 0
 
     for idx, item in enumerate(items):
         unit_price = manual_prices[idx]
-        subtotal = item["qty"] * unit_price
+        qty = int(item.get('qty', 1))
+        subtotal = qty * unit_price
         grand_total += subtotal
 
-        line3_html = f"<br><span>{item['line3']}</span>" if item['line3'] else ""
+        line3_val = item.get('line3', '')
+        line3_html = f"<br><span>{line3_val}</span>" if line3_val else ""
 
         table_rows_html += f"""
         <tr>
             <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx+1}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
-                <strong>{item['line1']}</strong><br>
-                <span>{item['line2']}</span>
+                <strong>{item.get('line1', '')}</strong><br>
+                <span>{item.get('line2', '')}</span>
                 {line3_html}
             </td>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{item['qty']:,}</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{qty:,}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
         </tr>
@@ -182,7 +192,7 @@ if uploaded_file is not None:
                     </td>
                     <td class="box" style="width: 50%; vertical-align: top;">
                         <strong>【採購資訊】</strong><br>
-                        採購單號：{target_supplier}20260729002<br>
+                        採購單號：{target_supplier}20260803001<br>
                         採購日期：2026/08/03<br>
                         交易條件：{incoterms}<br>
                         幣別：RMB
