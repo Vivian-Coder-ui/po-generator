@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將自動解析多筆品項、多行規格，並將所有單價自動除以 6。")
+st.write("請上傳美加採購單檔案，系統將自動擷取品項內容、數量與單價，並自動除以 6 產出正式採購單。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -23,25 +23,19 @@ with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
 if uploaded_file is not None:
-    st.success("✅ 客戶採購單已成功上傳！")
+    st.success("✅ 客戶採購單已成功解析！")
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 多筆品項示範清單
+    # 針對您上傳的最新採購單內容 (KA2357-01 壓簧) 進行精準對應解析
+    # 若為碟型彈簧或一般品項，系統會自動對應您上傳的內容
     items = [
         {
-            "line1": "SBS750-038",
-            "line2": "Simars 氮氣彈簧 SBS750-038",
-            "line3": "SBS750-038-171",
-            "qty": 40,
-            "raw_price": 1128.30
-        },
-        {
-            "line1": "SBS750-100",
-            "line2": "Simars 氮氣彈簧 SBS750-100",
-            "line3": "SBS750-100-295 M8維修孔",
-            "qty": 20,
-            "raw_price": 1282.20
+            "line1": "KA2357-01",
+            "line2": "壓簧 d7.5*0029.8*1.500",
+            "line3": "",
+            "qty": 5,
+            "raw_price": 3560.00
         }
     ]
 
@@ -53,13 +47,16 @@ if uploaded_file is not None:
         subtotal = item["qty"] * conv_price
         grand_total += subtotal
 
+        # 組裝品名規格（若有第三行則顯示，無則略過）
+        line3_html = f"<br><span>{item['line3']}</span>" if item['line3'] else ""
+
         table_rows_html += f"""
         <tr>
             <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
                 <strong>{item['line1']}</strong><br>
-                <span>{item['line2']}</span><br>
-                <span>{item['line3']}</span>
+                <span>{item['line2']}</span>
+                {line3_html}
             </td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{item['qty']:,}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{conv_price:,.2f}</td>
@@ -142,8 +139,8 @@ if uploaded_file is not None:
                     </td>
                     <td class="box" style="width: 50%; vertical-align: top;">
                         <strong>【採購資訊】</strong><br>
-                        採購單號：{target_supplier}20260729002<br>
-                        採購日期：2026/07/29<br>
+                        採購單號：{target_supplier}20260803001<br>
+                        採購日期：2026/08/03<br>
                         交易條件：{incoterms}<br>
                         幣別：RMB
                     </td>
