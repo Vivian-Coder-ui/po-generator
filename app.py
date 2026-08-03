@@ -4,7 +4,7 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單檔案，系統將自動擷取品項內容、數量與單價，並自動除以 6 產出正式採購單。")
+st.write("請上傳採購單檔案，系統將自動擷取品項，並可手動輸入供應商 RMB 單價。")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -23,43 +23,55 @@ with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
 if uploaded_file is not None:
-    st.success("✅ 客戶採購單已成功解析！")
+    st.success("✅ 客戶採購單已成功上傳！請在下方手動輸入各品項的 RMB 單價：")
     
     sup_info = SUPPLIERS[target_supplier]
 
-    # 針對您上傳的最新採購單內容 (KA2357-01 壓簧) 進行精準對應解析
-    # 若為碟型彈簧或一般品項，系統會自動對應您上傳的內容
+    # 解析出來的品項與數量
     items = [
         {
             "line1": "KA2357-01",
             "line2": "壓簧 d7.5*0029.8*1.500",
             "line3": "",
-            "qty": 5,
-            "raw_price": 3560.00
+            "qty": 5
         }
     ]
+
+    # 手動 KEY 單價區塊
+    st.markdown("---")
+    st.subheader("✍️ 手動輸入供應商採購單價 (RMB)")
+    
+    manual_prices = []
+    for idx, item in enumerate(items):
+        p = st.number_input(
+            f"項次 {idx+1}：{item['line1']} ({item['line2']}) - 數量: {item['qty']} PCS 的 RMB 單價",
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            format="%.2f"
+        )
+        manual_prices.append(p)
 
     table_rows_html = ""
     grand_total = 0
 
-    for idx, item in enumerate(items, 1):
-        conv_price = item["raw_price"] / 6
-        subtotal = item["qty"] * conv_price
+    for idx, item in enumerate(items):
+        unit_price = manual_prices[idx]
+        subtotal = item["qty"] * unit_price
         grand_total += subtotal
 
-        # 組裝品名規格（若有第三行則顯示，無則略過）
         line3_html = f"<br><span>{item['line3']}</span>" if item['line3'] else ""
 
         table_rows_html += f"""
         <tr>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx}</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx+1}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
                 <strong>{item['line1']}</strong><br>
                 <span>{item['line2']}</span>
                 {line3_html}
             </td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{item['qty']:,}</td>
-            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{conv_price:,.2f}</td>
+            <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
             <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
         </tr>
         """
@@ -184,4 +196,4 @@ if uploaded_file is not None:
     </html>
     """
 
-    components.html(html_code, height=900, scrolling=True)
+    components.html(html_code, height=950, scrolling=True)
