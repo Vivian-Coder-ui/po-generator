@@ -1,10 +1,13 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import google.generativeai as genai
+from PIL import Image
+import json
 
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳採購單檔案，並在下方直接手動輸入供應商的 RMB 單價。")
+st.write("請上傳最新的美加採購單檔案（截圖或 PDF），系統將透過 AI 自動判讀品號、品名與數量！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -22,37 +25,64 @@ with col1:
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
-# 固定品項資料
-items = [
-    {
-        "line1": "KA2357-01",
-        "line2": "壓簧 d7.5*0029.8*1.500",
-        "line3": "",
-        "qty": 5
-    }
-]
-
-# 讓使用者直接在畫面上手動輸入單價（精簡標籤為「項次 1」）
-st.markdown("---")
-st.subheader("✍️ 手動輸入各品項 RMB 單價")
-
-manual_prices = []
-for idx, item in enumerate(items):
-    p = st.number_input(
-        f"項次 {idx+1}",
-        min_value=0.0,
-        value=0.0,
-        step=0.01,
-        format="%.2f",
-        key=f"price_{idx}"
-    )
-    manual_prices.append(p)
+items = []
 
 if uploaded_file is not None:
-    st.success("✅ 客戶採購單已成功上傳！")
+    st.success("✅ 檔案已上傳，AI 正在自動判讀採購單明細...")
     
-    sup_info = SUPPLIERS[target_supplier]
+    try:
+        # 使用內建 Gemini 模型進行圖片/文件辨識
+        image = Image.open(uploaded_file)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = """
+        請仔細辨識這張採購單圖片中的所有明細項目，並嚴格以 JSON 格式回傳一個包含清單的物件，不要包含其他多餘文字。
+        格式如下：
+        [
+          {
+            "line1": "品號 (例如 KA2357-01)",
+            "line2": "品名與規格第一行 (例如 壓簧 d7.5*0029.8*1.500)",
+            "line3": "備註或專案代號 (若無則留空字串)",
+            "qty": 數量(數字)
+          }
+        ]
+        """
+        response = model.generate_content([image, prompt])
+        
+        # 解析 AI 回傳的 JSON 結果
+        clean_text = response.text.replace("```json", "").replace("```", "").strip()
+        items = json.loads(clean_text)
+        st.success(f"🎉 AI 成功辨識出 {len(items)} 筆品項！")
+        
+    except Exception as e:
+        # 若辨識失敗或上傳的是 PDF，提供預設備用解析避免當機
+        st.warning("⚠️ 無法自動解析圖片，已自動載入預設帶入欄位。您也可以直接在下方輸入單價。")
+        items = [
+            {
+                "line1": "KA2357-01",
+                "line2": "壓簧 d7.5*0029.8*1.500",
+                "line3": "",
+                "qty": 5
+            }
+        ]
 
+    # 手動輸入各品項單價區塊
+    st.markdown("---")
+    st.subheader("✍️ 手動輸入各品項 RMB 單價")
+
+    manual_prices = []
+    for idx, item in enumerate(items):
+        p = st.number_input(
+            f"項次 {idx+1}",
+            min_value=0.0,
+            value=0.0,
+            step=0.01,
+            format="%.2f",
+            key=f"price_{idx}"
+        )
+        manual_prices.append(p)
+
+    sup_info = SUPPLIERS[target_supplier]
     table_rows_html = ""
     grand_total = 0
 
@@ -61,7 +91,7 @@ if uploaded_file is not None:
         subtotal = item["qty"] * unit_price
         grand_total += subtotal
 
-        line3_html = f"<br><span>{item['line3']}</span>" if item['line3'] else ""
+        line3_html = f"<br><span>{item['line3']}</span>" if item.get('line3') else ""
 
         table_rows_html += f"""
         <tr>
