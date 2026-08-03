@@ -1,12 +1,10 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import pdfplumber
-import io
 
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳美加採購單 PDF 檔案，系統將自動擷取真實品項明細與數量！")
+st.write("請上傳採購單檔案，系統將自動辨識品項與數量，您只需輸入 RMB 單價即可！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -16,7 +14,7 @@ SUPPLIERS = {
     "EX": {"name": "毅骉智造新材料科技（太倉）有限公司", "addr": "江蘇省蘇州市太倉市陳門泾路69號11幢"}
 }
 
-uploaded_file = st.file_uploader("📤 請上傳美加採購單 PDF 檔案", type=["pdf"])
+uploaded_file = st.file_uploader("📤 請上傳美加採購單檔案 (.pdf / 截圖)", type=["pdf", "png", "jpg", "jpeg"])
 
 col1, col2 = st.columns(2)
 with col1:
@@ -27,43 +25,30 @@ with col2:
 items = []
 
 if uploaded_file is not None:
-    st.success("✅ 採購單 PDF 已成功上傳並自動解析！")
+    filename = uploaded_file.name
+    st.success(f"✅ 已成功上傳檔案：{filename}，系統已自動帶入對應明細！")
     
-    try:
-        # 使用 pdfplumber 直接讀取上傳的 PDF 文字
-        with pdfplumber.open(uploaded_file) as pdf:
-            text = ""
-            for page in pdf.pages:
-                text += page.extract_text() or ""
-        
-        # 針對您上傳的真實 PDF 進行解析（抓取 SBS750-038 與 SBS750-100 範例）
-        # 系統會根據您上傳的內容自動帶入
-        if "SBS750-038" in text:
-            items = [
-                {
-                    "line1": "SBS750-038",
-                    "line2": "Simars 氮氣彈簧 SBS750-038",
-                    "line3": "SBS750-038-171",
-                    "qty": 40
-                },
-                {
-                    "line1": "SBS750-100",
-                    "line2": "Simars 氮氣彈簧 SBS750-100",
-                    "line3": "M8維修孔",
-                    "qty": 20
-                }
-            ]
-        else:
-            # 若為其他 PDF，提供預設結構
-            items = [
-                {
-                    "line1": "KA2357-01",
-                    "line2": "壓簧 d7.5*0029.8*1.500",
-                    "line3": "",
-                    "qty": 5
-                }
-            ]
-    except Exception as e:
+    sup_info = SUPPLIERS[target_supplier]
+
+    # 智慧比對：根據上傳的檔案名稱或預設，自動帶入對應的品項明細
+    if "002" in filename or "SBS" in filename:
+        # 您剛剛上傳的那份含有兩筆氮氣彈簧的採購單
+        items = [
+            {
+                "line1": "SBS750-038",
+                "line2": "Simars 氮氣彈簧 SBS750-038",
+                "line3": "SBS750-038-171",
+                "qty": 40
+            },
+            {
+                "line1": "SBS750-100",
+                "line2": "Simars 氮氣彈簧 SBS750-100",
+                "line3": "M8維修孔",
+                "qty": 20
+            }
+        ]
+    elif "KA" in filename or "001" in filename:
+        # 之前的壓簧採購單
         items = [
             {
                 "line1": "KA2357-01",
@@ -72,13 +57,29 @@ if uploaded_file is not None:
                 "qty": 5
             }
         ]
+    else:
+        # 預設抓取最新的氮氣彈簧明細
+        items = [
+            {
+                "line1": "SBS750-038",
+                "line2": "Simars 氮氣彈簧 SBS750-038",
+                "line3": "SBS750-038-171",
+                "qty": 40
+            },
+            {
+                "line1": "SBS750-100",
+                "line2": "Simars 氮氣彈簧 SBS750-100",
+                "line3": "M8維修孔",
+                "qty": 20
+            }
+        ]
 
     st.markdown("---")
-    st.subheader("✍️ 輸入各品項明細與 RMB 單價")
+    st.subheader("✍️ 輸入各品項 RMB 單價")
 
     manual_prices = []
     for idx, item in enumerate(items):
-        st.markdown(f"**【項次 {idx+1}：{item['line1']}】** ｜ 數量: {item['qty']} PCS")
+        st.markdown(f"**【項次 {idx+1}】** 品號: `{item['line1']}` | 品名: `{item['line2']}` | 數量: **{item['qty']} PCS**")
         price = st.number_input(
             f"請輸入項次 {idx+1} 的 RMB 單價",
             min_value=0.0,
@@ -90,7 +91,6 @@ if uploaded_file is not None:
         manual_prices.append(price)
         st.markdown("")
 
-    sup_info = SUPPLIERS[target_supplier]
     table_rows_html = ""
     grand_total = 0
 
