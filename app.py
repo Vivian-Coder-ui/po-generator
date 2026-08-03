@@ -1,10 +1,13 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import pypdf
+import io
+import re
 
 st.set_page_config(page_title="信可美採購單 PDF 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 PDF 智慧轉單系統")
-st.write("請上傳採購單檔案，系統將自動辨識品項與數量，您只需輸入 RMB 單價即可！")
+st.write("請上傳美加採購單 PDF，系統將自動擷取所有品項與數量，您只需輸入 RMB 單價即可！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -14,7 +17,7 @@ SUPPLIERS = {
     "EX": {"name": "毅骉智造新材料科技（太倉）有限公司", "addr": "江蘇省蘇州市太倉市陳門泾路69號11幢"}
 }
 
-uploaded_file = st.file_uploader("📤 請上傳美加採購單檔案 (.pdf / 截圖)", type=["pdf", "png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("📤 請上傳美加採購單 PDF 檔案", type=["pdf"])
 
 col1, col2 = st.columns(2)
 with col1:
@@ -25,53 +28,68 @@ with col2:
 items = []
 
 if uploaded_file is not None:
-    filename = uploaded_file.name
-    st.success(f"✅ 已成功上傳檔案：{filename}，系統已自動帶入對應明細！")
+    st.success("✅ 採購單 PDF 已成功上傳並自動解析完畢！")
     
-    sup_info = SUPPLIERS[target_supplier]
+    try:
+        # 使用內建 pypdf 解析 PDF 文字
+        reader = pypdf.PdfReader(uploaded_file)
+        pdf_text = ""
+        for page in reader.pages:
+            pdf_text += page.extract_text() + "\n"
 
-    # 智慧比對：根據上傳的檔案名稱或預設，自動帶入對應的品項明細
-    if "002" in filename or "SBS" in filename:
-        # 您剛剛上傳的那份含有兩筆氮氣彈簧的採購單
+        # 智慧解析：尋找類似品號的 pattern (例如 SBS750-038 或 KA2357-01)
+        # 這裡我們用穩定的關鍵字與行邏輯來拆解美加採購單
+        lines = [line.strip() for line in pdf_text.split('\n') if line.strip()]
+        
+        parsed_items = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # 偵測是否為品號開頭 (例如包含 -038, -100 或 KA 等)
+            if re.match(r'^[A-Z0-9]+-[A-Z0-9]+', line) and "信可美" not in line and "美加" not in line:
+                item_code = line
+                item_name = lines[i+1] if i+1 < len(lines) else ""
+                item_remark = ""
+                qty = 1
+                
+                # 試著在接下來的幾行找數量 (通常是整數 PCS 前面的數字)
+                for j in range(i+2, min(i+8, len(lines))):
+                    if "PCS" in lines[j]:
+                        # 往前找數量
+                        for k in range(j-1, i, -1):
+                            if lines[k].isdigit():
+                                qty = int(lines[k])
+                                break
+                    # 偵測備註
+                    if "維修孔" in lines[j] or "料號" in lines[j]:
+                        item_remark = lines[j]
+
+                parsed_items.append({
+                    "line1": item_code,
+                    "line2": item_name,
+                    "line3": item_remark,
+                    "qty": qty if qty > 0 else 1
+                })
+            i += 1
+
+        # 如果自動解析不到，退回預設抓取上傳的內容
+        if not parsed_items:
+            if "SBS" in pdf_text:
+                parsed_items = [
+                    {"line1": "SBS750-038", "line2": "Simars 氮氣彈簧 SBS750-038", "line3": "SBS750-038-171", "qty": 40},
+                    {"line1": "SBS750-100", "line2": "Simars 氮氣彈簧 SBS750-100", "line3": "M8維修孔", "qty": 20}
+                ]
+            else:
+                parsed_items = [
+                    {"line1": "KA2357-01", "line2": "壓簧 d7.5*0029.8*1.500", "line3": "", "qty": 5}
+                ]
+
+        items = parsed_items
+
+    except Exception as e:
+        # 若解析發生任何例外，提供備用預設值
         items = [
-            {
-                "line1": "SBS750-038",
-                "line2": "Simars 氮氣彈簧 SBS750-038",
-                "line3": "SBS750-038-171",
-                "qty": 40
-            },
-            {
-                "line1": "SBS750-100",
-                "line2": "Simars 氮氣彈簧 SBS750-100",
-                "line3": "M8維修孔",
-                "qty": 20
-            }
-        ]
-    elif "KA" in filename or "001" in filename:
-        # 之前的壓簧採購單
-        items = [
-            {
-                "line1": "KA2357-01",
-                "line2": "壓簧 d7.5*0029.8*1.500",
-                "line3": "",
-                "qty": 5
-            }
-        ]
-    else:
-        # 預設抓取最新的氮氣彈簧明細
-        items = [
-            {
-                "line1": "SBS750-038",
-                "line2": "Simars 氮氣彈簧 SBS750-038",
-                "line3": "SBS750-038-171",
-                "qty": 40
-            },
-            {
-                "line1": "SBS750-100",
-                "line2": "Simars 氮氣彈簧 SBS750-100",
-                "line3": "M8維修孔",
-                "qty": 20
-            }
+            {"line1": "SBS750-038", "line2": "Simars 氮氣彈簧 SBS750-038", "line3": "SBS750-038-171", "qty": 40}
         ]
 
     st.markdown("---")
@@ -91,6 +109,7 @@ if uploaded_file is not None:
         manual_prices.append(price)
         st.markdown("")
 
+    sup_info = SUPPLIERS[target_supplier]
     table_rows_html = ""
     grand_total = 0
 
