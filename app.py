@@ -77,11 +77,15 @@ if uploaded_file is not None:
                 
                 item_code = col_1
                 item_name = str(row.get(2, '')).strip()
-                spec = str(row.get(6, '')).strip()
+                spec = str(row.get(3, '')).strip()  # 欄位 D (索引 3) 為規格
                 full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
                 
+                remark = str(row.get(6, '')).strip()  # 欄位 G (索引 6) 為備註
+                if remark == 'nan':
+                    remark = ""
+
                 try:
-                    qty = float(row.get(3, 1))
+                    qty = float(row.get(4, 1))  # 欄位 E (索引 4) 為數量
                 except:
                     qty = 1.0
 
@@ -90,7 +94,8 @@ if uploaded_file is not None:
                     "品號": item_code,
                     "品名與規格": full_name,
                     "數量": int(qty),
-                    "RMB單價": 0.00
+                    "RMB單價": 0.00,
+                    "備註": remark
                 })
 
         if not items_data:
@@ -102,6 +107,11 @@ if uploaded_file is not None:
                 item_name = str(row.get('品名', '')).strip()
                 spec = str(row.get('規格', '')).strip()
                 full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
+                
+                remark = str(row.get('備註', '')).strip()
+                if remark == 'nan':
+                    remark = ""
+
                 try:
                     qty = float(row.get('採購數量', 1))
                 except:
@@ -111,22 +121,23 @@ if uploaded_file is not None:
                     "品號": item_code,
                     "品名與規格": full_name,
                     "數量": int(qty),
-                    "RMB單價": 0.00
+                    "RMB單價": 0.00,
+                    "備註": remark
                 })
 
         if not items_data:
-            items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
+            items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00, "備註": ""}]
 
         st.success(f"✅ 成功從 Excel 自動擷取到 {len(items_data)} 筆品項明細！")
 
     except Exception as e:
         st.error(f"❌ 讀取 Excel 發生錯誤：{e}")
-        items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
+        items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00, "備註": ""}]
 
 else:
     # 預設示範資料
     items_data = [
-        {"項次": 1, "品號": "DB502530*", "品名與規格": "盤形彈簧 DB502530* 50x25.4x3.0xH4.2", "數量": 500000, "RMB單價": 14.70}
+        {"項次": 1, "品號": "DB502530*", "品名與規格": "盤形彈簧 DB502530* 50x25.4x3.0xH4.2", "數量": 500000, "RMB單價": 14.70, "備註": "此批公差:OD/-0.25 ID20.27~20.46 T+0.09/-0.12 H+0.3"}
     ]
 
 st.markdown("---")
@@ -155,6 +166,7 @@ for idx, item in enumerate(items_data):
     qty = item["數量"]
     subtotal = qty * unit_price
     grand_total += subtotal
+    remark = item.get("備註", "")
 
     table_rows_html += f"""
     <tr>
@@ -166,6 +178,7 @@ for idx, item in enumerate(items_data):
         <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{qty:,}</td>
         <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
         <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
+        <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 9pt;">{remark}</td>
     </tr>
     """
 
@@ -186,7 +199,7 @@ html_code = f"""
         padding: 20px;
     }}
     .container {{
-        max-width: 750px;
+        max-width: 850px;
         margin: auto;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
@@ -266,6 +279,7 @@ html_code = f"""
                     <th class="text-right">數量 (PCS)</th>
                     <th class="text-right">單價 (RMB)</th>
                     <th class="text-right">金額 (RMB)</th>
+                    <th>備註</th>
                 </tr>
             </thead>
             <tbody>
