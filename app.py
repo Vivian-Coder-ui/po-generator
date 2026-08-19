@@ -27,14 +27,13 @@ with col1:
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
-# 1. 採購資訊新增「交期」欄位讓使用者填寫
+# 1. 採購資訊新增「交期」欄位
 delivery_date = st.text_input("📅 輸入交期 (Delivery Date)", value="2026/09/15")
 
 items_data = []
 
 if uploaded_file is not None:
     try:
-        # 自動修復 openpyxl 讀取美加 Excel 常見的 NamedCellStyle 錯誤
         file_bytes = uploaded_file.read()
         fixed_io = io.BytesIO()
         
@@ -58,7 +57,6 @@ if uploaded_file is not None:
             file_bytes_io.seek(0)
             excel_to_read = file_bytes_io
 
-        # 讀取 Excel 的「單身資料」分頁
         xls = pd.ExcelFile(excel_to_read)
         if '單身資料' in xls.sheet_names:
             df_body = pd.read_excel(excel_to_read, sheet_name='單身資料', header=None)
@@ -80,15 +78,15 @@ if uploaded_file is not None:
                 
                 item_code = col_1
                 item_name = str(row.get(2, '')).strip()
-                spec = str(row.get(3, '')).strip()  # 欄位 D (索引 3) 為規格
+                spec = str(row.get(3, '')).strip()
                 full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
                 
-                remark = str(row.get(6, '')).strip()  # 欄位 G (索引 6) 為備註
+                remark = str(row.get(6, '')).strip()
                 if remark == 'nan':
                     remark = ""
 
                 try:
-                    qty = float(row.get(4, 1))  # 欄位 E (索引 4) 為數量
+                    qty = float(row.get(4, 1))
                 except:
                     qty = 1.0
 
@@ -138,7 +136,6 @@ if uploaded_file is not None:
         items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00, "備註": ""}]
 
 else:
-    # 預設示範資料
     items_data = [
         {"項次": 1, "品號": "DB502530*", "品名與規格": "盤形彈簧 DB502530* 50x25.4x3.0xH4.2", "數量": 500000, "RMB單價": 14.70, "備註": "此批公差:OD/-0.25 ID20.27~20.46 T+0.09/-0.12 H+0.3"}
     ]
@@ -160,7 +157,7 @@ for idx, item in enumerate(items_data):
     manual_prices.append(price)
     st.markdown("")
 
-# 2. 未稅總金額下方新增「其他備註」欄位讓使用者填寫
+# 2. 未稅總金額下方新增「其他備註」欄位
 st.markdown("---")
 additional_remark = st.text_area("📝 輸入其他備註事項 (選填，將顯示於未稅金額下方)", value="")
 
@@ -189,7 +186,6 @@ for idx, item in enumerate(items_data):
     </tr>
     """
 
-# 組合其他備註的 HTML 區塊
 additional_remark_html = f"""
 <div style="margin-top: 10px; padding: 10px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 5px; font-size: 10pt; color: #92400e;">
     <strong>備註說明：</strong> {additional_remark.replace(chr(10), '<br>')}
@@ -246,8 +242,22 @@ html_code = f"""
     table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
     .text-right {{ text-align: right; }}
     .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
-    .signature-table {{ width: 100%; margin-top: 30px; border-collapse: collapse; }}
-    .signature-box {{ width: 48%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; vertical-align: top; background: #fff; height: 90px; }}
+    
+    /* 3. 使用絕對穩固的表格排版確保簽名欄位左右對齊、絕不跑版 */
+    .signature-table {{
+        width: 100%;
+        margin-top: 30px;
+        border-collapse: collapse;
+    }}
+    .signature-cell {{
+        width: 48%;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 15px;
+        vertical-align: top;
+        background: #fff;
+        height: 100px;
+    }}
 
     @media print {{
         body {{ background: white; padding: 0; }}
@@ -318,17 +328,17 @@ html_code = f"""
             4. 請做正式出口報關。
         </div>
 
-        <!-- 3. 最底下新增簽名欄位 (左：供應商 / 右：信可美) -->
+        <!-- 3. 左右固定對齊的簽名欄位 -->
         <table class="signature-table">
             <tr>
-                <td class="signature-box" style="float: left;">
-                    <strong>【供應商簽名確認】</strong><br><br><br>
+                <td class="signature-cell">
+                    <strong>供應商簽名</strong><br><br><br>
                     簽章：___________________________
                 </td>
                 <td style="width: 4%;"></td>
-                <td class="signature-box" style="float: right;">
-                    <strong>【信可美股份有限公司】</strong><br><br><br>
-                    採購核准：_______________________
+                <td class="signature-cell">
+                    <strong>信可美簽名</strong><br><br><br>
+                    簽章：___________________________
                 </td>
             </tr>
         </table>
@@ -337,4 +347,4 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=1050, scrolling=True)
+components.html(html_code, height=1100, scrolling=True)
