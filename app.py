@@ -9,7 +9,7 @@ import openpyxl
 st.set_page_config(page_title="信可美採購單 Excel 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 Excel 智慧轉單系統")
-st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項與數量，輸入單價後即可預覽並列印正式採購單！")
+st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項與數量，輸入單價與相關資訊後即可預覽並列印正式採購單！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -26,6 +26,9 @@ with col1:
     target_supplier = st.selectbox("🎯 選擇發給哪家供應商", ["SF", "VS", "XB", "YX", "EX"])
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
+
+# 1. 採購資訊新增「交期」欄位讓使用者填寫
+delivery_date = st.text_input("📅 輸入交期 (Delivery Date)", value="2026/09/15")
 
 items_data = []
 
@@ -157,6 +160,10 @@ for idx, item in enumerate(items_data):
     manual_prices.append(price)
     st.markdown("")
 
+# 2. 未稅總金額下方新增「其他備註」欄位讓使用者填寫
+st.markdown("---")
+additional_remark = st.text_area("📝 輸入其他備註事項 (選填，將顯示於未稅金額下方)", value="")
+
 sup_info = SUPPLIERS[target_supplier]
 table_rows_html = ""
 grand_total = 0
@@ -181,6 +188,13 @@ for idx, item in enumerate(items_data):
         <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 9pt;">{remark}</td>
     </tr>
     """
+
+# 組合其他備註的 HTML 區塊
+additional_remark_html = f"""
+<div style="margin-top: 10px; padding: 10px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 5px; font-size: 10pt; color: #92400e;">
+    <strong>備註說明：</strong> {additional_remark.replace(chr(10), '<br>')}
+</div>
+""" if additional_remark.strip() != "" else ""
 
 st.markdown("---")
 st.subheader("📋 採購單正式預覽與一鍵列印/存檔")
@@ -232,6 +246,8 @@ html_code = f"""
     table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
     .text-right {{ text-align: right; }}
     .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
+    .signature-table {{ width: 100%; margin-top: 30px; border-collapse: collapse; }}
+    .signature-box {{ width: 48%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 15px; vertical-align: top; background: #fff; height: 90px; }}
 
     @media print {{
         body {{ background: white; padding: 0; }}
@@ -259,6 +275,7 @@ html_code = f"""
                     <strong>【採購資訊】</strong><br>
                     採購單號：{target_supplier}20260803001<br>
                     採購日期：2026/08/03<br>
+                    交期：{delivery_date}<br>
                     交易條件：{incoterms}<br>
                     幣別：RMB
                 </td>
@@ -291,6 +308,8 @@ html_code = f"""
             未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
         </div>
 
+        {additional_remark_html}
+
         <div class="terms">
             <strong>【採購注意事項與條款】</strong><br>
             1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
@@ -298,9 +317,24 @@ html_code = f"""
             3. 順豐帳號：8860743308<br>
             4. 請做正式出口報關。
         </div>
+
+        <!-- 3. 最底下新增簽名欄位 (左：供應商 / 右：信可美) -->
+        <table class="signature-table">
+            <tr>
+                <td class="signature-box" style="float: left;">
+                    <strong>【供應商簽名確認】</strong><br><br><br>
+                    簽章：___________________________
+                </td>
+                <td style="width: 4%;"></td>
+                <td class="signature-box" style="float: right;">
+                    <strong>【信可美股份有限公司】</strong><br><br><br>
+                    採購核准：_______________________
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>
 """
 
-components.html(html_code, height=950, scrolling=True)
+components.html(html_code, height=1050, scrolling=True)
