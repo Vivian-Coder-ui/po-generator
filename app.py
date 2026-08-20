@@ -27,7 +27,6 @@ with col1:
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
 
-# 1. 採購資訊新增「交期」欄位
 delivery_date = st.text_input("📅 輸入交期 (Delivery Date)", value="2026/09/15")
 
 items_data = []
@@ -157,7 +156,6 @@ for idx, item in enumerate(items_data):
     manual_prices.append(price)
     st.markdown("")
 
-# 2. 未稅總金額下方新增「其他備註」欄位
 st.markdown("---")
 additional_remark = st.text_area("📝 輸入其他備註事項 (選填，將顯示於未稅金額下方)", value="")
 
@@ -186,9 +184,10 @@ for idx, item in enumerate(items_data):
     </tr>
     """
 
+# 加入 white-space 與 word-break 強制換行，防止文字往右飄或溢出
 additional_remark_html = f"""
-<div style="margin-top: 10px; padding: 10px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 5px; font-size: 10pt; color: #92400e;">
-    <strong>備註說明：</strong> {additional_remark.replace(chr(10), '<br>')}
+<div style="margin-top: 10px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 5px; font-size: 10pt; color: #92400e; white-space: pre-wrap; word-break: break-word;">
+    <strong>備註說明：</strong><br>{additional_remark}
 </div>
 """ if additional_remark.strip() != "" else ""
 
@@ -243,7 +242,6 @@ html_code = f"""
     .text-right {{ text-align: right; }}
     .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
     
-    /* 3. 使用絕對穩固的表格排版確保簽名欄位左右對齊、絕不跑版 */
     .signature-table {{
         width: 100%;
         margin-top: 30px;
@@ -328,7 +326,6 @@ html_code = f"""
             4. 請做正式出口報關。
         </div>
 
-        <!-- 3. 左右固定對齊的簽名欄位 -->
         <table class="signature-table">
             <tr>
                 <td class="signature-cell">
