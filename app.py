@@ -9,7 +9,7 @@ import openpyxl
 st.set_page_config(page_title="信可美採購單 Excel 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 Excel 智慧轉單系統")
-st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項與數量，輸入單價與相關資訊後即可預覽並列印正式採購單！")
+st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項與數量，設定相關資訊後即可預覽並列印正式採購單！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -19,13 +19,29 @@ SUPPLIERS = {
     "EX": {"name": "毅骉智造新材料科技（太倉）有限公司", "addr": "江蘇省蘇州市太倉市陳門泾路69號11幢"}
 }
 
+# 收貨地址選項字典
+SHIPPING_ADDRESSES = {
+    "桃園蘆竹倉": {
+        "company": "信可美股份有限公司",
+        "address": "338桃園市蘆竹區安中街20巷13號4樓",
+        "phone": "02-8201-4393"
+    },
+    "宜蘭蘇澳廠": {
+        "company": "信可美股份有限公司 (蘇澳廠)",
+        "address": "27048宜蘭縣蘇澳鎮中山路二段417號",
+        "phone": "03-959-6641"
+    }
+}
+
 uploaded_file = st.file_uploader("📤 請上傳美加採購單 Excel 檔 (.xlsx)", type=["xlsx", "xls"])
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 with col1:
     target_supplier = st.selectbox("🎯 選擇發給哪家供應商", ["SF", "VS", "XB", "YX", "EX"])
 with col2:
     incoterms = st.selectbox("🤝 選擇交易條件 (Incoterms)", ["FOB", "CIF", "EXW", "DDP", "CFR"])
+with col3:
+    shipping_choice = st.selectbox("📍 選擇收貨地址", list(SHIPPING_ADDRESSES.keys()))
 
 delivery_date = st.text_input("📅 輸入交期 (Delivery Date)", value="2026/09/15")
 
@@ -160,6 +176,8 @@ st.markdown("---")
 additional_remark = st.text_area("📝 輸入其他備註事項 (選填，將顯示於未稅金額下方)", value="")
 
 sup_info = SUPPLIERS[target_supplier]
+ship_info = SHIPPING_ADDRESSES[shipping_choice]
+
 table_rows_html = ""
 grand_total = 0
 
@@ -184,7 +202,6 @@ for idx, item in enumerate(items_data):
     </tr>
     """
 
-# 加入 white-space 與 word-break 強制換行，防止文字往右飄或溢出
 additional_remark_html = f"""
 <div style="margin-top: 10px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 5px; font-size: 10pt; color: #92400e; white-space: pre-wrap; word-break: break-word;">
     <strong>備註說明：</strong><br>{additional_remark}
@@ -292,8 +309,8 @@ html_code = f"""
 
         <div class="box" style="margin-top: 12px;">
             <strong>【收貨與寄送資訊】</strong><br>
-            收貨公司：信可美股份有限公司<br>
-            收貨地址：338桃園市蘆竹區安中街20巷13號4樓 (電話: 02-8201-4393)
+            收貨公司：{ship_info['company']}<br>
+            收貨地址：{ship_info['address']} (電話: {ship_info['phone']})
         </div>
 
         <table class="items">
