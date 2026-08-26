@@ -189,21 +189,21 @@ for idx, item in enumerate(items_data):
 
     table_rows_html += f"""
     <tr>
-        <td style="padding: 4px 6px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">{idx+1}</td>
-        <td style="padding: 4px 6px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">{idx+1}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
             <strong>{item['品號']}</strong><br>
             <span>{item['品名與規格']}</span>
         </td>
-        <td style="padding: 4px 6px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
-        <td style="padding: 4px 6px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
-        <td style="padding: 4px 6px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
-        <td style="padding: 4px 6px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 8pt;">{remark}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
+        <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 9pt;">{remark}</td>
     </tr>
     """
 
 additional_remark_html = f"""
-<div style="margin-top: 4px; padding: 4px 8px; background: #fffbeb; border: none; border-radius: 4px; font-size: 8.5pt; color: #92400e; white-space: pre-wrap; word-break: break-word; text-align: justify; text-justify: inter-ideograph;">
-    <strong>備註說明：</strong>{additional_remark}
+<div style="margin-top: 12px; padding: 12px; background: #fffbeb; border: none; border-radius: 5px; font-size: 10pt; color: #92400e; white-space: pre-wrap; word-break: break-word; text-align: justify; text-justify: inter-ideograph;">
+    <strong>備註說明：</strong><br>{additional_remark}
 </div>
 """ if additional_remark.strip() != "" else ""
 
@@ -218,22 +218,21 @@ html_code = f"""
 <style>
     @page {{
         size: A4;
-        margin: 5mm;
+        margin: 10mm 12mm;
     }}
     body {{
         background: #f8fafc;
         color: #333;
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 5px;
-        font-size: 9pt;
+        padding: 0;
+        font-size: 10pt;
     }}
     .container {{
-        max-width: 100%;
-        width: 200mm;
+        max-width: 850px;
         margin: auto;
         border: none;
-        padding: 10px 15px;
+        padding: 25px;
         background: white;
         box-sizing: border-box;
     }}
@@ -241,37 +240,37 @@ html_code = f"""
         background-color: #1a365d;
         color: white;
         border: none;
-        padding: 8px 16px;
-        font-size: 11pt;
+        padding: 12px 24px;
+        font-size: 14pt;
         font-weight: bold;
         border-radius: 6px;
         cursor: pointer;
         display: block;
-        margin: 0 auto 10px auto;
+        margin: 0 auto 25px auto;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }}
     .print-btn:hover {{ background-color: #2a4365; }}
-    h2 {{ color: #1a365d; margin: 0 0 2px 0; font-size: 14pt; }}
-    .subtitle {{ color: #666; margin-bottom: 4px; font-size: 9pt; }}
-    hr {{ border: none; border-top: 1px solid #1a365d; margin: 4px 0; }}
-    .grid {{ width: 100%; margin-top: 4px; border-collapse: collapse; border: none; }}
-    .box {{ background: #f8fafc; padding: 6px 8px; border-radius: 4px; border: none; font-size: 8.5pt; line-height: 1.35; }}
+    h2 {{ color: #1a365d; margin: 0 0 5px 0; font-size: 18pt; }}
+    .subtitle {{ color: #666; margin-bottom: 10px; font-size: 11pt; }}
+    hr {{ border: none; border-top: 1px solid #1a365d; margin: 10px 0; }}
+    .grid {{ width: 100%; margin-top: 12px; border-collapse: collapse; border: none; }}
+    .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: none; font-size: 10pt; line-height: 1.5; }}
     
-    table.items {{ width: 100%; border-collapse: collapse; margin-top: 6px; border: none; }}
-    table.items th, table.items td {{ border: none; padding: 4px 6px; font-size: 8.5pt; }}
-    table.items th {{ background-color: #1a365d; color: white; text-align: left; border: none; padding: 5px 6px; }}
+    table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; border: none; }}
+    table.items th, table.items td {{ border: none; padding: 10px; font-size: 10pt; }}
+    table.items th {{ background-color: #1a365d; color: white; text-align: left; border: none; padding: 10px; }}
     table.items tr {{ border-bottom: 1px solid #e2e8f0; }}
     
     .text-right {{ text-align: right; }}
     
     .terms {{ 
         background: #f1f5f9; 
-        padding: 6px 8px; 
-        border-radius: 4px; 
-        margin-top: 6px; 
-        font-size: 8pt; 
-        line-height: 1.3; 
+        padding: 12px; 
+        border-radius: 5px; 
+        margin-top: 15px; 
+        font-size: 9pt; 
+        line-height: 1.5; 
         color: #444; 
         border: none; 
         text-align: justify;
@@ -281,20 +280,20 @@ html_code = f"""
     .signature-container {{
         display: flex;
         justify-content: space-between;
-        margin-top: 10px;
+        margin-top: 30px;
         width: 100%;
     }}
     .signature-cell {{
         width: 46%;
         border: none;
-        padding: 4px;
+        padding: 10px;
         background: #fff;
-        height: 50px;
-        font-size: 8.5pt;
+        height: 70px;
+        font-size: 10pt;
     }}
 
     @media print {{
-        body {{ background: white; padding: 0; font-size: 8.5pt; }}
+        body {{ background: white; padding: 0; }}
         .container {{ border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }}
         .print-btn {{ display: none; }}
     }}
@@ -323,7 +322,7 @@ html_code = f"""
             </tr>
         </table>
 
-        <div class="box" style="margin-top: 4px;">
+        <div class="box" style="margin-top: 10px;">
             <strong>【收貨與寄送資訊】</strong> 收貨公司：{ship_info['company']} ｜ 地址：{ship_info['address']} (電話: {ship_info['phone']})
         </div>
 
@@ -343,7 +342,7 @@ html_code = f"""
             </tbody>
         </table>
 
-        <div style="text-align: right; font-size: 10.5pt; font-weight: bold; margin-top: 6px;">
+        <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
             未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
         </div>
 
@@ -371,4 +370,4 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=850, scrolling=True)
+components.html(html_code, height=950, scrolling=True)
