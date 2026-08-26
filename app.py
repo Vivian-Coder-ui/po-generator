@@ -19,7 +19,6 @@ SUPPLIERS = {
     "EX": {"name": "毅骉智造新材料科技（太倉）有限公司", "addr": "江蘇省蘇州市太倉市陳門泾路69號11幢"}
 }
 
-# 收貨地址選項字典
 SHIPPING_ADDRESSES = {
     "桃園蘆竹倉": {
         "company": "信可美股份有限公司",
@@ -190,20 +189,20 @@ for idx, item in enumerate(items_data):
 
     table_rows_html += f"""
     <tr>
-        <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">{idx+1}</td>
-        <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top;">
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">{idx+1}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
             <strong>{item['品號']}</strong><br>
             <span>{item['品名與規格']}</span>
         </td>
-        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{qty:,}</td>
-        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
-        <td style="padding: 10px; border: 1px solid #cbd5e1; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
-        <td style="padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 9pt;">{remark}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 9pt;">{remark}</td>
     </tr>
     """
 
 additional_remark_html = f"""
-<div style="margin-top: 10px; padding: 12px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 5px; font-size: 10pt; color: #92400e; white-space: pre-wrap; word-break: break-word;">
+<div style="margin-top: 10px; padding: 12px; background: #fffbeb; border: none; border-radius: 5px; font-size: 10pt; color: #92400e; white-space: pre-wrap; word-break: break-word;">
     <strong>備註說明：</strong><br>{additional_remark}
 </div>
 """ if additional_remark.strip() != "" else ""
@@ -227,11 +226,10 @@ html_code = f"""
     .container {{
         max-width: 850px;
         margin: auto;
-        border: 1px solid #cbd5e1;
+        border: none; /* 移除外框線 */
         border-radius: 8px;
         padding: 30px;
         background: white;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }}
     .print-btn {{
         background-color: #1a365d;
@@ -250,24 +248,28 @@ html_code = f"""
     .print-btn:hover {{ background-color: #2a4365; }}
     h2 {{ color: #1a365d; margin-bottom: 0px; }}
     .subtitle {{ color: #666; margin-top: 5px; font-size: 11pt; }}
-    hr {{ border: 1px solid #1a365d; }}
-    .grid {{ width: 100%; margin-top: 15px; border-collapse: collapse; }}
-    .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: 1px solid #e2e8f0; font-size: 10pt; line-height: 1.5; }}
-    table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
-    table.items th, table.items td {{ border: 1px solid #cbd5e1; padding: 10px; font-size: 10pt; }}
-    table.items th {{ background-color: #1a365d; color: white; text-align: left; }}
+    hr {{ border: none; border-top: 1px solid #1a365d; }}
+    .grid {{ width: 100%; margin-top: 15px; border-collapse: collapse; border: none; }}
+    .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: none; font-size: 10pt; line-height: 1.5; }}
+    
+    /* 移除表格周圍框線，僅保留乾淨的欄位底線 */
+    table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; border: none; }}
+    table.items th, table.items td {{ border: none; padding: 10px; font-size: 10pt; }}
+    table.items th {{ background-color: #1a365d; color: white; text-align: left; border: none; }}
+    table.items tr {{ border-bottom: 1px solid #e2e8f0; }}
+    
     .text-right {{ text-align: right; }}
-    .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; }}
+    .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; border: none; }}
     
     .signature-table {{
         width: 100%;
         margin-top: 30px;
         border-collapse: collapse;
+        border: none;
     }}
     .signature-cell {{
         width: 48%;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
+        border: none; /* 移除簽名方框框線 */
         padding: 15px;
         vertical-align: top;
         background: #fff;
