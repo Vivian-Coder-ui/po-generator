@@ -231,7 +231,7 @@ html_code = f"""
     .container {{
         max-width: 850px;
         width: 100%;
-        min-height: 255mm; /* 強制撐滿單頁 A4 高度 */
+        min-height: 255mm;
         margin: auto;
         border: none;
         padding: 20px;
@@ -239,7 +239,7 @@ html_code = f"""
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        justify-content: space-between; /* 上方內容靠上，簽名欄自動推到最下方 */
+        justify-content: space-between;
     }}
     .print-btn {{
         background-color: #1a365d;
@@ -282,7 +282,6 @@ html_code = f"""
         text-justify: inter-ideograph;
     }}
     
-    /* 簽名欄位永久固定在底部 */
     .signature-container {{
         display: flex;
         justify-content: space-between;
@@ -307,7 +306,6 @@ html_code = f"""
 </head>
 <body>
     <div class="container">
-        <!-- 上半部主要內容 -->
         <div>
             <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為單頁 A4 PDF</button>
 
@@ -330,8 +328,10 @@ html_code = f"""
                 </tr>
             </table>
 
-            <div class="box" style="margin-top: 10px;">
-                <strong>【收貨與寄送資訊】</strong> 收貨公司：{ship_info['company']} ｜ 地址：{ship_info['address']} (電話: {ship_info['phone']})
+            <div class="box" style="margin-top: 10px; line-height: 1.6;">
+                <strong>【收貨與寄送資訊】</strong><br>
+                收貨公司：{ship_info['company']}<br>
+                收貨地址：{ship_info['address']} (電話: {ship_info['phone']})
             </div>
 
             <table class="items">
@@ -364,7 +364,6 @@ html_code = f"""
             </div>
         </div>
 
-        <!-- 下半部：永久釘選在底部的簽名欄 -->
         <div class="signature-container">
             <div class="signature-cell">
                 <strong>供應商簽名</strong><br><br>
