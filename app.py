@@ -94,10 +94,6 @@ if uploaded_file is not None:
                 item_name = str(row.get(2, '')).strip()
                 spec = str(row.get(3, '')).strip()
                 full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
-                
-                remark = str(row.get(6, '')).strip()
-                if remark == 'nan':
-                    remark = ""
 
                 try:
                     qty = float(row.get(4, 1))
@@ -109,8 +105,7 @@ if uploaded_file is not None:
                     "品號": item_code,
                     "品名與規格": full_name,
                     "數量": int(qty),
-                    "RMB單價": 0.00,
-                    "備註": remark
+                    "RMB單價": 0.00
                 })
 
         if not items_data:
@@ -122,10 +117,6 @@ if uploaded_file is not None:
                 item_name = str(row.get('品名', '')).strip()
                 spec = str(row.get('規格', '')).strip()
                 full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
-                
-                remark = str(row.get('備註', '')).strip()
-                if remark == 'nan':
-                    remark = ""
 
                 try:
                     qty = float(row.get('採購數量', 1))
@@ -136,22 +127,21 @@ if uploaded_file is not None:
                     "品號": item_code,
                     "品名與規格": full_name,
                     "數量": int(qty),
-                    "RMB單價": 0.00,
-                    "備註": remark
+                    "RMB單價": 0.00
                 })
 
         if not items_data:
-            items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00, "備註": ""}]
+            items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
 
         st.success(f"✅ 成功從 Excel 自動擷取到 {len(items_data)} 筆品項明細！")
 
     except Exception as e:
         st.error(f"❌ 讀取 Excel 發生錯誤：{e}")
-        items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00, "備註": ""}]
+        items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
 
 else:
     items_data = [
-        {"項次": 1, "品號": "DB502530*", "品名與規格": "盤形彈簧 DB502530* 50x25.4x3.0xH4.2", "數量": 500000, "RMB單價": 14.70, "備註": "此批公差:OD/-0.25 ID20.27~20.46 T+0.09/-0.12 H+0.3"}
+        {"項次": 1, "品號": "DB502530*", "品名與規格": "盤形彈簧 DB502530* 50x25.4x3.0xH4.2", "數量": 500000, "RMB單價": 14.70}
     ]
 
 st.markdown("---")
@@ -185,7 +175,6 @@ for idx, item in enumerate(items_data):
     qty = item["數量"]
     subtotal = qty * unit_price
     grand_total += subtotal
-    remark = item.get("備註", "")
 
     table_rows_html += f"""
     <tr>
@@ -197,7 +186,6 @@ for idx, item in enumerate(items_data):
         <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
         <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
         <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 9pt;">{remark}</td>
     </tr>
     """
 
@@ -260,7 +248,7 @@ html_code = f"""
     .subtitle {{ color: #666; margin-bottom: 10px; font-size: 11pt; }}
     hr {{ border: none; border-top: 1px solid #1a365d; margin: 10px 0; }}
     .grid {{ width: 100%; margin-top: 12px; border-collapse: collapse; border: none; }}
-    .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: none; font-size: 10pt; line-height: 1.5; }}
+    .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: none; font-size: 10pt; line-height: 1.6; }}
     
     table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; border: none; }}
     table.items th, table.items td {{ border: none; padding: 10px; font-size: 10pt; }}
@@ -322,8 +310,11 @@ html_code = f"""
                     </td>
                     <td class="box" style="width: 50%; vertical-align: top;">
                         <strong>【採購資訊】</strong><br>
-                        採購單號：{target_supplier}20260803001 &nbsp;|&nbsp; 採購日期：2026/08/03<br>
-                        交期：{delivery_date} &nbsp;|&nbsp; 條件：{incoterms} &nbsp;|&nbsp; 幣別：RMB
+                        採購單號：{target_supplier}20260803001<br>
+                        採購日期：2026/08/03<br>
+                        交期：{delivery_date}<br>
+                        交易條件：{incoterms}<br>
+                        幣別：RMB
                     </td>
                 </tr>
             </table>
@@ -342,7 +333,6 @@ html_code = f"""
                         <th class="text-right">數量 (PCS)</th>
                         <th class="text-right">單價 (RMB)</th>
                         <th class="text-right">金額 (RMB)</th>
-                        <th>備註</th>
                     </tr>
                 </thead>
                 <tbody>
