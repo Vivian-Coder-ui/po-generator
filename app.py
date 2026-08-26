@@ -189,21 +189,21 @@ for idx, item in enumerate(items_data):
 
     table_rows_html += f"""
     <tr>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">{idx+1}</td>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+        <td style="padding: 6px 8px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">{idx+1}</td>
+        <td style="padding: 6px 8px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
             <strong>{item['品號']}</strong><br>
             <span>{item['品名與規格']}</span>
         </td>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
-        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 9pt;">{remark}</td>
+        <td style="padding: 6px 8px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
+        <td style="padding: 6px 8px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
+        <td style="padding: 6px 8px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
+        <td style="padding: 6px 8px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 8.5pt;">{remark}</td>
     </tr>
     """
 
 additional_remark_html = f"""
-<div style="margin-top: 10px; padding: 12px; background: #fffbeb; border: none; border-radius: 5px; font-size: 10pt; color: #92400e; white-space: pre-wrap; word-break: break-word;">
-    <strong>備註說明：</strong><br>{additional_remark}
+<div style="margin-top: 6px; padding: 6px 10px; background: #fffbeb; border: none; border-radius: 4px; font-size: 9pt; color: #92400e; white-space: pre-wrap; word-break: break-word;">
+    <strong>備註說明：</strong>{additional_remark}
 </div>
 """ if additional_remark.strip() != "" else ""
 
@@ -216,76 +216,82 @@ html_code = f"""
 <head>
 <meta charset="utf-8">
 <style>
+    @page {{
+        size: A4;
+        margin: 8mm;
+    }}
     body {{
         background: #f8fafc;
         color: #333;
         font-family: Arial, sans-serif;
         margin: 0;
-        padding: 20px;
+        padding: 10px;
+        font-size: 9.5pt;
     }}
     .container {{
-        max-width: 850px;
+        max-width: 100%;
+        width: 194mm;
         margin: auto;
-        border: none; /* 移除外框線 */
-        border-radius: 8px;
-        padding: 30px;
+        border: none;
+        padding: 15px;
         background: white;
+        box-sizing: border-box;
     }}
     .print-btn {{
         background-color: #1a365d;
         color: white;
         border: none;
-        padding: 12px 24px;
-        font-size: 14pt;
+        padding: 10px 20px;
+        font-size: 12pt;
         font-weight: bold;
         border-radius: 6px;
         cursor: pointer;
         display: block;
-        margin: 0 auto 25px auto;
+        margin: 0 auto 15px auto;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }}
     .print-btn:hover {{ background-color: #2a4365; }}
-    h2 {{ color: #1a365d; margin-bottom: 0px; }}
-    .subtitle {{ color: #666; margin-top: 5px; font-size: 11pt; }}
-    hr {{ border: none; border-top: 1px solid #1a365d; }}
-    .grid {{ width: 100%; margin-top: 15px; border-collapse: collapse; border: none; }}
-    .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: none; font-size: 10pt; line-height: 1.5; }}
+    h2 {{ color: #1a365d; margin: 0 0 2px 0; font-size: 15pt; }}
+    .subtitle {{ color: #666; margin-bottom: 5px; font-size: 9.5pt; }}
+    hr {{ border: none; border-top: 1px solid #1a365d; margin: 6px 0; }}
+    .grid {{ width: 100%; margin-top: 8px; border-collapse: collapse; border: none; }}
+    .box {{ background: #f8fafc; padding: 8px 10px; border-radius: 4px; border: none; font-size: 9pt; line-height: 1.4; }}
     
-    /* 移除表格周圍框線，僅保留乾淨的欄位底線 */
-    table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; border: none; }}
-    table.items th, table.items td {{ border: none; padding: 10px; font-size: 10pt; }}
-    table.items th {{ background-color: #1a365d; color: white; text-align: left; border: none; }}
+    table.items {{ width: 100%; border-collapse: collapse; margin-top: 8px; border: none; }}
+    table.items th, table.items td {{ border: none; padding: 6px 8px; font-size: 9pt; }}
+    table.items th {{ background-color: #1a365d; color: white; text-align: left; border: none; padding: 6px 8px; }}
     table.items tr {{ border-bottom: 1px solid #e2e8f0; }}
     
     .text-right {{ text-align: right; }}
-    .terms {{ background: #f1f5f9; padding: 12px; border-radius: 5px; margin-top: 15px; font-size: 9pt; line-height: 1.5; color: #444; border: none; }}
+    .terms {{ background: #f1f5f9; padding: 8px 10px; border-radius: 4px; margin-top: 8px; font-size: 8.5pt; line-height: 1.35; color: #444; border: none; }}
     
     .signature-table {{
         width: 100%;
-        margin-top: 30px;
+        margin-top: 12px;
         border-collapse: collapse;
         border: none;
     }}
     .signature-cell {{
         width: 48%;
-        border: none; /* 移除簽名方框框線 */
-        padding: 15px;
+        border: none;
+        padding: 8px;
         vertical-align: top;
         background: #fff;
-        height: 100px;
+        height: 65px;
+        font-size: 9pt;
     }}
 
     @media print {{
-        body {{ background: white; padding: 0; }}
-        .container {{ border: none; box-shadow: none; padding: 0; max-width: 100%; }}
+        body {{ background: white; padding: 0; font-size: 9pt; }}
+        .container {{ border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }}
         .print-btn {{ display: none; }}
     }}
 </style>
 </head>
 <body>
     <div class="container">
-        <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為 PDF 檔</button>
+        <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為單頁 A4 PDF</button>
 
         <h2>信可美股份有限公司</h2>
         <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
@@ -300,19 +306,14 @@ html_code = f"""
                 </td>
                 <td class="box" style="width: 50%; vertical-align: top;">
                     <strong>【採購資訊】</strong><br>
-                    採購單號：{target_supplier}20260803001<br>
-                    採購日期：2026/08/03<br>
-                    交期：{delivery_date}<br>
-                    交易條件：{incoterms}<br>
-                    幣別：RMB
+                    採購單號：{target_supplier}20260803001 &nbsp;|&nbsp; 採購日期：2026/08/03<br>
+                    交期：{delivery_date} &nbsp;|&nbsp; 條件：{incoterms} &nbsp;|&nbsp; 幣別：RMB
                 </td>
             </tr>
         </table>
 
-        <div class="box" style="margin-top: 12px;">
-            <strong>【收貨與寄送資訊】</strong><br>
-            收貨公司：{ship_info['company']}<br>
-            收貨地址：{ship_info['address']} (電話: {ship_info['phone']})
+        <div class="box" style="margin-top: 6px;">
+            <strong>【收貨與寄送資訊】</strong> 收貨公司：{ship_info['company']} ｜ 地址：{ship_info['address']} (電話: {ship_info['phone']})
         </div>
 
         <table class="items">
@@ -331,7 +332,7 @@ html_code = f"""
             </tbody>
         </table>
 
-        <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
+        <div style="text-align: right; font-size: 11pt; font-weight: bold; margin-top: 8px;">
             未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
         </div>
 
@@ -340,20 +341,18 @@ html_code = f"""
         <div class="terms">
             <strong>【採購注意事項與條款】</strong><br>
             1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
-            2. 公差必須於標準公差範圍內（若適用）。<br>
-            3. 順豐帳號：8860743308<br>
-            4. 請做正式出口報關。
+            2. 公差必須於標準公差範圍內（若適用）。 3. 順豐帳號：8860743308 4. 請做正式出口報關。
         </div>
 
         <table class="signature-table">
             <tr>
                 <td class="signature-cell">
-                    <strong>供應商簽名</strong><br><br><br>
+                    <strong>供應商簽名</strong><br><br>
                     簽章：___________________________
                 </td>
                 <td style="width: 4%;"></td>
                 <td class="signature-cell">
-                    <strong>信可美簽名</strong><br><br><br>
+                    <strong>信可美簽名</strong><br><br>
                     簽章：___________________________
                 </td>
             </tr>
@@ -363,4 +362,4 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=1100, scrolling=True)
+components.html(html_code, height=900, scrolling=True)
