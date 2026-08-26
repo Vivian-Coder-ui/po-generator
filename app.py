@@ -196,7 +196,7 @@ for idx, item in enumerate(items_data):
         </td>
         <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{qty:,}</td>
         <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{unit_price:,.2f}</td>
-        <td style="padding: 10px; border: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
+        <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; text-align: right; vertical-align: top;">{subtotal:,.2f}</td>
         <td style="padding: 10px; border: none; border-bottom: 1px solid #e2e8f0; vertical-align: top; font-size: 9pt;">{remark}</td>
     </tr>
     """
@@ -230,11 +230,16 @@ html_code = f"""
     }}
     .container {{
         max-width: 850px;
+        width: 100%;
+        min-height: 255mm; /* 強制撐滿單頁 A4 高度 */
         margin: auto;
         border: none;
-        padding: 25px;
+        padding: 20px;
         background: white;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* 上方內容靠上，簽名欄自動推到最下方 */
     }}
     .print-btn {{
         background-color: #1a365d;
@@ -277,10 +282,11 @@ html_code = f"""
         text-justify: inter-ideograph;
     }}
     
+    /* 簽名欄位永久固定在底部 */
     .signature-container {{
         display: flex;
         justify-content: space-between;
-        margin-top: 30px;
+        margin-top: 20px;
         width: 100%;
     }}
     .signature-cell {{
@@ -294,67 +300,71 @@ html_code = f"""
 
     @media print {{
         body {{ background: white; padding: 0; }}
-        .container {{ border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }}
+        .container {{ border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; min-height: 275mm; }}
         .print-btn {{ display: none; }}
     }}
 </style>
 </head>
 <body>
     <div class="container">
-        <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為單頁 A4 PDF</button>
+        <!-- 上半部主要內容 -->
+        <div>
+            <button class="print-btn" onclick="window.print()">🖨️ 點此列印 / 另存為單頁 A4 PDF</button>
 
-        <h2>信可美股份有限公司</h2>
-        <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
-        <hr>
-        
-        <table class="grid">
-            <tr>
-                <td class="box" style="width: 50%; vertical-align: top;">
-                    <strong>【供應商資訊】</strong><br>
-                    {sup_info['name']} ({target_supplier})<br>
-                    地址：{sup_info['addr']}
-                </td>
-                <td class="box" style="width: 50%; vertical-align: top;">
-                    <strong>【採購資訊】</strong><br>
-                    採購單號：{target_supplier}20260803001 &nbsp;|&nbsp; 採購日期：2026/08/03<br>
-                    交期：{delivery_date} &nbsp;|&nbsp; 條件：{incoterms} &nbsp;|&nbsp; 幣別：RMB
-                </td>
-            </tr>
-        </table>
-
-        <div class="box" style="margin-top: 10px;">
-            <strong>【收貨與寄送資訊】</strong> 收貨公司：{ship_info['company']} ｜ 地址：{ship_info['address']} (電話: {ship_info['phone']})
-        </div>
-
-        <table class="items">
-            <thead>
+            <h2>信可美股份有限公司</h2>
+            <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
+            <hr>
+            
+            <table class="grid">
                 <tr>
-                    <th>項次</th>
-                    <th>品名與規格</th>
-                    <th class="text-right">數量 (PCS)</th>
-                    <th class="text-right">單價 (RMB)</th>
-                    <th class="text-right">金額 (RMB)</th>
-                    <th>備註</th>
+                    <td class="box" style="width: 50%; vertical-align: top;">
+                        <strong>【供應商資訊】</strong><br>
+                        {sup_info['name']} ({target_supplier})<br>
+                        地址：{sup_info['addr']}
+                    </td>
+                    <td class="box" style="width: 50%; vertical-align: top;">
+                        <strong>【採購資訊】</strong><br>
+                        採購單號：{target_supplier}20260803001 &nbsp;|&nbsp; 採購日期：2026/08/03<br>
+                        交期：{delivery_date} &nbsp;|&nbsp; 條件：{incoterms} &nbsp;|&nbsp; 幣別：RMB
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                {table_rows_html}
-            </tbody>
-        </table>
+            </table>
 
-        <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
-            未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
+            <div class="box" style="margin-top: 10px;">
+                <strong>【收貨與寄送資訊】</strong> 收貨公司：{ship_info['company']} ｜ 地址：{ship_info['address']} (電話: {ship_info['phone']})
+            </div>
+
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th>項次</th>
+                        <th>品名與規格</th>
+                        <th class="text-right">數量 (PCS)</th>
+                        <th class="text-right">單價 (RMB)</th>
+                        <th class="text-right">金額 (RMB)</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {table_rows_html}
+                </tbody>
+            </table>
+
+            <div style="text-align: right; font-size: 12pt; font-weight: bold; margin-top: 15px;">
+                未稅總金額 (Total RMB)：RMB {grand_total:,.2f}
+            </div>
+
+            {additional_remark_html}
+
+            <div class="terms">
+                <strong>【採購注意事項與條款】</strong><br>
+                1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
+                2. 公差必須於標準公差範圍內（若適用）。<br>
+                3. 順豐帳號：8860743308 ｜ 4. 請做正式出口報關。
+            </div>
         </div>
 
-        {additional_remark_html}
-
-        <div class="terms">
-            <strong>【採購注意事項與條款】</strong><br>
-            1. 若供應商對以上內容有任何異議，請務必於收到訂單3日內來電討論，否則視為正式接受訂單。<br>
-            2. 公差必須於標準公差範圍內（若適用）。<br>
-            3. 順豐帳號：8860743308 ｜ 4. 請做正式出口報關。
-        </div>
-
+        <!-- 下半部：永久釘選在底部的簽名欄 -->
         <div class="signature-container">
             <div class="signature-cell">
                 <strong>供應商簽名</strong><br><br>
