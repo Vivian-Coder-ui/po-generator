@@ -51,6 +51,22 @@ def extract_po_number(xls):
     return None
 
 
+def derive_date_from_po(po_number):
+    """採購單號前 8 碼若符合 YYYYMMDD，就拆解成日期；否則回傳 None。"""
+    if not po_number:
+        return None
+    digits = po_number[:8]
+    if len(digits) == 8 and digits.isdigit():
+        y, m, d = digits[0:4], digits[4:6], digits[6:8]
+        try:
+            import datetime
+            datetime.date(int(y), int(m), int(d))
+            return f"{y}/{m}/{d}"
+        except Exception:
+            return None
+    return None
+
+
 def parse_items_generic(df):
     """
     依欄位『名稱』（而非欄位位置）解析品項，因此不管範本欄位順序如何排列都能正確擷取。
@@ -143,7 +159,6 @@ delivery_date = st.text_input("📅 輸入交期 (Delivery Date)", value="2026/0
 
 items_data = []
 po_number_from_file = None
-po_date_default = "2026/08/03"
 
 if uploaded_file is not None:
     try:
@@ -202,10 +217,14 @@ else:
 
 st.markdown("---")
 
-# 採購單號 / 採購日期：若從檔案抓到就預帶入，仍可手動覆寫
+# 採購單號：若從檔案抓到就預帶入，仍可手動覆寫
 col_po1, col_po2 = st.columns(2)
 with col_po1:
     po_number = st.text_input("🔢 採購單號", value=po_number_from_file or "20260803001")
+
+# 採購日期：優先從採購單號前 8 碼 (YYYYMMDD) 拆解，抓不到才用系統當天日期
+import datetime
+po_date_default = derive_date_from_po(po_number) or datetime.date.today().strftime("%Y/%m/%d")
 with col_po2:
     po_date = st.text_input("📅 採購日期", value=po_date_default)
 
