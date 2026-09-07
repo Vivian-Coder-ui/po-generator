@@ -4,12 +4,11 @@ import pandas as pd
 import io
 import zipfile
 import xml.etree.ElementTree as ET
-import openpyxl
 
 st.set_page_config(page_title="信可美採購單 Excel 智慧轉單系統", layout="centered")
 
 st.title("📄 信可美採購單 Excel 智慧轉單系統")
-st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項與數量，設定相關資訊後即可預覽並列印正式採購單！")
+st.write("請上傳美加採購單 Excel 檔，系統將自動擷取所有品項、數量與採購單號，設定相關資訊後即可預覽並列印正式採購單！")
 
 SUPPLIERS = {
     "SF": {"name": "廊坊雙飛碟簧有限公司", "addr": "天津市河西區廣東路永安大廈 B1-903"},
@@ -32,6 +31,104 @@ SHIPPING_ADDRESSES = {
     }
 }
 
+
+def extract_po_number(xls):
+    """從『單頭資料』分頁抓取採購單號（若欄位名稱是『採購單號』的表頭，取其下一列同欄位的值）。"""
+    try:
+        if '單頭資料' not in xls.sheet_names:
+            return None
+        df_header = pd.read_excel(xls, sheet_name='單頭資料', header=None)
+        for idx in range(len(df_header)):
+            row_vals = [str(v).strip() for v in df_header.iloc[idx].tolist()]
+            if '採購單號' in row_vals:
+                col_idx = row_vals.index('採購單號')
+                if idx + 1 < len(df_header):
+                    val = df_header.iloc[idx + 1, col_idx]
+                    if pd.notna(val) and str(val).strip():
+                        return str(val).strip()
+    except Exception:
+        pass
+    return None
+
+
+def parse_items_generic(df):
+    """
+    依欄位『名稱』（而非欄位位置）解析品項，因此不管範本欄位順序如何排列都能正確擷取。
+    支援的欄位名稱：
+      品號代碼: 品號
+      名稱:     品名 (可省略)
+      規格:     規格 (可省略)
+      數量:     採購數量 或 數量
+    """
+    header_row_idx = None
+    col_map = {}
+
+    for idx in range(len(df)):
+        row_vals = [str(v).strip() for v in df.iloc[idx].tolist()]
+        if '品號' in row_vals:
+            header_row_idx = idx
+            for j, v in enumerate(row_vals):
+                if v and v != 'nan' and v not in col_map:
+                    col_map[v] = j
+            break
+
+    if header_row_idx is None:
+        return []
+
+    def find_col(candidates):
+        for c in candidates:
+            if c in col_map:
+                return col_map[c]
+        return None
+
+    code_col = find_col(['品號'])
+    name_col = find_col(['品名'])
+    spec_col = find_col(['規格'])
+    qty_col = find_col(['採購數量', '數量'])
+
+    items = []
+    for idx in range(header_row_idx + 1, len(df)):
+        row = df.iloc[idx]
+
+        code_val = row[code_col] if code_col is not None and code_col < len(row) else None
+        code_str = str(code_val).strip() if pd.notna(code_val) else ''
+        if not code_str or code_str == 'nan' or '以下空白' in code_str:
+            continue
+
+        name_str = ''
+        if name_col is not None and name_col < len(row) and pd.notna(row[name_col]):
+            name_str = str(row[name_col]).strip()
+            if name_str == 'nan':
+                name_str = ''
+
+        spec_str = ''
+        if spec_col is not None and spec_col < len(row) and pd.notna(row[spec_col]):
+            spec_str = str(row[spec_col]).strip()
+            if spec_str == 'nan':
+                spec_str = ''
+
+        full_name = f"{name_str} {spec_str}".strip()
+        if not full_name:
+            full_name = code_str  # 沒有品名/規格欄位時，至少不要留空白
+
+        qty = 1.0
+        if qty_col is not None and qty_col < len(row) and pd.notna(row[qty_col]):
+            try:
+                qty = float(row[qty_col])
+            except Exception:
+                qty = 1.0
+
+        items.append({
+            "項次": len(items) + 1,
+            "品號": code_str,
+            "品名與規格": full_name,
+            "數量": int(qty),
+            "RMB單價": 0.00
+        })
+
+    return items
+
+
 uploaded_file = st.file_uploader("📤 請上傳美加採購單 Excel 檔 (.xlsx)", type=["xlsx", "xls"])
 
 col1, col2, col3 = st.columns(3)
@@ -45,12 +142,14 @@ with col3:
 delivery_date = st.text_input("📅 輸入交期 (Delivery Date)", value="2026/09/15")
 
 items_data = []
+po_number_from_file = None
+po_date_default = "2026/08/03"
 
 if uploaded_file is not None:
     try:
         file_bytes = uploaded_file.read()
         fixed_io = io.BytesIO()
-        
+
         try:
             with zipfile.ZipFile(io.BytesIO(file_bytes), 'r') as zin:
                 with zipfile.ZipFile(fixed_io, 'w') as zout:
@@ -72,68 +171,25 @@ if uploaded_file is not None:
             excel_to_read = file_bytes_io
 
         xls = pd.ExcelFile(excel_to_read)
+
+        # 抓採購單號
+        po_number_from_file = extract_po_number(xls)
+
+        # 抓品項明細（依欄位名稱通用比對，不再依賴欄位位置）
         if '單身資料' in xls.sheet_names:
-            df_body = pd.read_excel(excel_to_read, sheet_name='單身資料', header=None)
+            df_body = pd.read_excel(xls, sheet_name='單身資料', header=None)
         else:
-            df_body = pd.read_excel(excel_to_read, sheet_name=0, header=None)
+            df_body = pd.read_excel(xls, sheet_name=0, header=None)
 
-        start_row = False
-        for idx, row in df_body.iterrows():
-            col_0 = str(row.get(0, '')).strip()
-            col_1 = str(row.get(1, '')).strip()
-            
-            if col_0 == '序號' or col_1 == '品號':
-                start_row = True
-                continue
-            
-            if start_row:
-                if not col_1 or col_1 == 'nan' or '以下空白' in col_1:
-                    continue
-                
-                item_code = col_1
-                item_name = str(row.get(2, '')).strip()
-                spec = str(row.get(3, '')).strip()
-                full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
-
-                try:
-                    qty = float(row.get(4, 1))
-                except:
-                    qty = 1.0
-
-                items_data.append({
-                    "項次": len(items_data) + 1,
-                    "品號": item_code,
-                    "品名與規格": full_name,
-                    "數量": int(qty),
-                    "RMB單價": 0.00
-                })
-
-        if not items_data:
-            df_named = pd.read_excel(excel_to_read, sheet_name='單身資料', header=2)
-            for idx, row in df_named.iterrows():
-                item_code = str(row.get('品號', '')).strip()
-                if not item_code or item_code == 'nan' or item_code == '品號':
-                    continue
-                item_name = str(row.get('品名', '')).strip()
-                spec = str(row.get('規格', '')).strip()
-                full_name = f"{item_name} {spec}".strip() if spec and spec != 'nan' else item_name
-
-                try:
-                    qty = float(row.get('採購數量', 1))
-                except:
-                    qty = 1.0
-                items_data.append({
-                    "項次": len(items_data) + 1,
-                    "品號": item_code,
-                    "品名與規格": full_name,
-                    "數量": int(qty),
-                    "RMB單價": 0.00
-                })
+        items_data = parse_items_generic(df_body)
 
         if not items_data:
             items_data = [{"項次": 1, "品號": "KA2357-01", "品名與規格": "壓簧 d7.5*0029.8*1.500", "數量": 5, "RMB單價": 0.00}]
 
-        st.success(f"✅ 成功從 Excel 自動擷取到 {len(items_data)} 筆品項明細！")
+        if po_number_from_file:
+            st.success(f"✅ 成功擷取到 {len(items_data)} 筆品項明細，採購單號：{po_number_from_file}")
+        else:
+            st.warning(f"⚠️ 成功擷取到 {len(items_data)} 筆品項明細，但未在「單頭資料」找到採購單號，將使用預設值。")
 
     except Exception as e:
         st.error(f"❌ 讀取 Excel 發生錯誤：{e}")
@@ -143,6 +199,15 @@ else:
     items_data = [
         {"項次": 1, "品號": "DB502530*", "品名與規格": "盤形彈簧 DB502530* 50x25.4x3.0xH4.2", "數量": 500000, "RMB單價": 14.70}
     ]
+
+st.markdown("---")
+
+# 採購單號 / 採購日期：若從檔案抓到就預帶入，仍可手動覆寫
+col_po1, col_po2 = st.columns(2)
+with col_po1:
+    po_number = st.text_input("🔢 採購單號", value=po_number_from_file or "20260803001")
+with col_po2:
+    po_date = st.text_input("📅 採購日期", value=po_date_default)
 
 st.markdown("---")
 st.subheader("✍️ 輸入各品項 RMB 單價")
@@ -249,27 +314,27 @@ html_code = f"""
     hr {{ border: none; border-top: 1px solid #1a365d; margin: 10px 0; }}
     .grid {{ width: 100%; margin-top: 12px; border-collapse: collapse; border: none; }}
     .box {{ background: #f8fafc; padding: 12px; border-radius: 5px; border: none; font-size: 10pt; line-height: 1.6; }}
-    
+
     table.items {{ width: 100%; border-collapse: collapse; margin-top: 15px; border: none; }}
     table.items th, table.items td {{ border: none; padding: 10px; font-size: 10pt; }}
     table.items th {{ background-color: #1a365d; color: white; text-align: left; border: none; padding: 10px; }}
     table.items tr {{ border-bottom: 1px solid #e2e8f0; }}
-    
+
     .text-right {{ text-align: right; }}
-    
-    .terms {{ 
-        background: #f1f5f9; 
-        padding: 12px; 
-        border-radius: 5px; 
-        margin-top: 15px; 
-        font-size: 9pt; 
-        line-height: 1.5; 
-        color: #444; 
-        border: none; 
+
+    .terms {{
+        background: #f1f5f9;
+        padding: 12px;
+        border-radius: 5px;
+        margin-top: 15px;
+        font-size: 9pt;
+        line-height: 1.5;
+        color: #444;
+        border: none;
         text-align: justify;
         text-justify: inter-ideograph;
     }}
-    
+
     .signature-container {{
         display: flex;
         justify-content: space-between;
@@ -300,7 +365,7 @@ html_code = f"""
             <h2>信可美股份有限公司</h2>
             <div class="subtitle">PURCHASE ORDER (正式採購單)</div>
             <hr>
-            
+
             <table class="grid">
                 <tr>
                     <td class="box" style="width: 50%; vertical-align: top;">
@@ -310,8 +375,8 @@ html_code = f"""
                     </td>
                     <td class="box" style="width: 50%; vertical-align: top;">
                         <strong>【採購資訊】</strong><br>
-                        採購單號：{target_supplier}20260803001<br>
-                        採購日期：2026/08/03<br>
+                        採購單號：{target_supplier}{po_number}<br>
+                        採購日期：{po_date}<br>
                         交期：{delivery_date}<br>
                         交易條件：{incoterms}<br>
                         幣別：RMB
